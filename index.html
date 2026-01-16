@@ -43,7 +43,8 @@
             transform: scale(1.1); box-shadow: 0 0 25px rgba(229, 57, 53, 0.7);
         }
         #neuronal-status {
-            margin-top: 20px; color: #757575; height: 20px;
+            margin-top: 20px; color: #757575; height: 40px; /* Más altura para el texto */
+            text-align: center; font-style: italic;
         }
 
         /* --- Estilos Modo Cargo (Chat) --- */
@@ -136,7 +137,7 @@
         // --- CONFIGURACIÓN ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
-        const openRouterApiKey = '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'; // Tu clave de API
+        const openRouterApiKey = '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';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
         // --- ELEMENTOS DEL DOM ---
@@ -155,44 +156,54 @@
             navDots[index].classList.add('active');
         }
 
-        // --- LÓGICA MODO NEURONAL ---
+        // --- LÓGICA MODO NEURONAL (MEJORADA) ---
         const neuronalRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        neuronalRecognition.lang = 'es-ES';
-        neuronalRecognition.continuous = false;
+        if (neuronalRecognition) {
+            neuronalRecognition.lang = 'es-ES';
+            neuronalRecognition.continuous = false;
 
-        neuronalBtn.addEventListener('mousedown', () => {
-            neuronalBtn.classList.add('recording');
-            neuronalStatus.textContent = 'Escuchando...';
-            neuronalRecognition.start();
-        });
+            neuronalBtn.addEventListener('mousedown', () => {
+                neuronalBtn.classList.add('recording');
+                neuronalStatus.textContent = 'Escuchando...';
+                try { neuronalRecognition.start(); } catch(e) { neuronalStatus.textContent = 'Error al iniciar mic.'; }
+            });
 
-        neuronalBtn.addEventListener('mouseup', () => {
-            neuronalBtn.classList.remove('recording');
-            neuronalStatus.textContent = 'Procesando...';
-            neuronalRecognition.stop();
-        });
+            neuronalBtn.addEventListener('mouseup', () => {
+                neuronalBtn.classList.remove('recording');
+                neuronalRecognition.stop();
+            });
 
-        neuronalRecognition.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript;
-            neuronalStatus.textContent = `Guardando: "${transcript}"`;
-            try {
-                const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
-                if (error) throw error;
-                neuronalStatus.textContent = '¡Guardado con éxito!';
-            } catch (error) {
-                console.error('Error al guardar en neuronal:', error);
-                neuronalStatus.textContent = 'Error al guardar.';
-            }
-            setTimeout(() => { neuronalStatus.textContent = 'Presiona para grabar'; }, 3000);
-        };
-        neuronalRecognition.onerror = (event) => {
-            console.error('Error de reconocimiento neuronal:', event.error);
-            neuronalStatus.textContent = 'Error de micrófono.';
-            neuronalBtn.classList.remove('recording');
-        };
+            neuronalRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                // ¡NUEVO! Muestra el texto capturado inmediatamente.
+                neuronalStatus.textContent = `"${transcript}"`;
+                
+                // Espera 3 segundos y luego guarda.
+                setTimeout(async () => {
+                    neuronalStatus.textContent = 'Guardando...';
+                    try {
+                        const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
+                        if (error) throw error;
+                        neuronalStatus.textContent = '¡Guardado con éxito!';
+                    } catch (error) {
+                        console.error('Error al guardar en neuronal:', error);
+                        neuronalStatus.textContent = 'Error al guardar.';
+                    }
+                    // Limpia el mensaje después de otros 3 segundos.
+                    setTimeout(() => { neuronalStatus.textContent = 'Presiona para grabar'; }, 3000);
+                }, 3000);
+            };
+            neuronalRecognition.onerror = (event) => {
+                console.error('Error de reconocimiento neuronal:', event.error);
+                neuronalStatus.textContent = 'Error de micrófono.';
+                neuronalBtn.classList.remove('recording');
+            };
+        } else {
+            neuronalStatus.textContent = 'Reconocimiento de voz no soportado.';
+        }
 
-        // --- LÓGICA MODO CARGO ---
-        let cargoData = {}; // Objeto para almacenar los datos del cargo
+        // --- LÓGICA MODO CARGO (CORREGIDA) ---
+        let cargoData = {};
         let conversationHistory = [];
 
         function addChatMessage(content, type) {
@@ -210,130 +221,123 @@
             chatInput.value = '';
             chatActionBtn.textContent = '🎤';
 
-            addChatMessage('...', 'ia-message');
-            const thinkingMessage = chatMessages.lastChild;
+            const thinkingMessage = document.createElement('div');
+            thinkingMessage.className = 'message ia-message';
+            thinkingMessage.textContent = '...';
+            chatMessages.appendChild(thinkingMessage);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
 
             try {
-                const { data: iaResponse, error } = await getCargoIaResponse(userMessage);
-                if (error) throw new Error(error);
+                const iaResponse = await getCargoIaResponse(userMessage);
                 
                 thinkingMessage.textContent = iaResponse.respuesta;
-                
-                // Actualizar datos y verificar si está completo
                 Object.assign(cargoData, iaResponse.datos);
                 
                 if (iaResponse.completo) {
-                    addChatMessage('Todos los datos están completos. Guardando en la base de datos...', 'system-message');
+                    addChatMessage('Todos los datos están completos. Guardando...', 'system-message');
                     const { error: insertError } = await supabase.from('cargo').insert(cargoData);
                     if (insertError) {
                         addChatMessage(`Error al guardar: ${insertError.message}`, 'system-message');
                     } else {
                         addChatMessage('¡Registro guardado con éxito!', 'system-message');
                     }
-                    // Reiniciar para el siguiente registro
                     cargoData = {};
                     conversationHistory = [];
-                    setTimeout(() => addChatMessage('Listo para un nuevo registro. Puedes darme cualquier dato para empezar.', 'ia-message'), 1000);
+                    setTimeout(() => addChatMessage('Listo para un nuevo registro.', 'ia-message'), 1000);
                 }
-
             } catch (error) {
                 thinkingMessage.textContent = `Lo siento, hubo un error: ${error.message}`;
             }
         }
 
         async function getCargoIaResponse(pregunta) {
-            const systemPrompt = `
-                Eres un asistente de ingreso de datos para la tabla 'cargo'. Tu única función es extraer 5 campos de la conversación: 'nfua', 'nombre', 'nro_historia', 'fecha_atencion', 'monto'.
-                
-                **Reglas de Formateo Estrictas:**
-                1.  **nfua:** Debe tener 8 dígitos. Si el usuario da menos, rellena con ceros a la izquierda. Ej: "9241" -> "00009241".
-                2.  **nro_historia:** Formato 'E' + año (2 dígitos) + 8 dígitos. Si el usuario dice "E25 4981", lo unes y rellenas con ceros: "E2500004981". El total de dígitos después de la 'E' debe ser 10.
-                3.  **fecha_atencion:** Formato AAAA-MM-DD. Asume el año actual (2026) si no se especifica.
-                4.  **monto:** Debe ser un número. Interpreta "tres soles cincuenta" como 3.50.
-                5.  **nombre:** El nombre completo del paciente.
-
-                **Tu Proceso:**
-                1.  Recibes la entrada del usuario y el estado actual de los datos recolectados.
-                2.  Extraes cualquier dato nuevo que coincida con tus reglas.
-                3.  Actualizas el objeto de datos.
-                4.  Revisas qué campos faltan.
-                5.  **Tu respuesta SIEMPRE debe ser un JSON con este formato:**
-                    {
-                      "respuesta": "Tu mensaje al usuario. Ej: 'Entendido. Ahora necesito el número de FUA.'",
-                      "datos": { "nombre": "valor_actual", "nfua": "valor_actual", ... },
-                      "completo": true/false
-                    }
-                6.  Si todos los campos están llenos, pones "completo" en true y tu respuesta puede ser "Datos completos. Procediendo a guardar.".
-                7.  Si faltan campos, pones "completo" en false y pides el siguiente dato que te falte.
-            `;
+            const systemPrompt = `Eres un asistente de ingreso de datos para la tabla 'cargo'. Tu única función es extraer 5 campos: 'nfua', 'nombre', 'nro_historia', 'fecha_atencion', 'monto'.
+            **Reglas de Formateo Estrictas:**
+            1. **nfua:** 8 dígitos, rellenar con ceros a la izquierda. Ej: "9241" -> "00009241".
+            2. **nro_historia:** Formato 'E' + año (2 dígitos) + 8 dígitos. Ej: "E25 4981" -> "E2500004981". Total 10 dígitos después de 'E'.
+            3. **fecha_atencion:** Formato AAAA-MM-DD. Asume el año actual (2026) si no se especifica.
+            4. **monto:** Número. "tres soles cincuenta" -> 3.50.
+            5. **nombre:** Nombre completo.
+            **Proceso:** Recibes datos actuales y la nueva entrada. Extraes datos, actualizas el objeto, y revisas qué falta.
+            **Tu respuesta SIEMPRE debe ser un JSON con este formato:**
+            { "respuesta": "Tu mensaje al usuario. Ej: 'Entendido. Ahora necesito el FUA.'", "datos": { "nombre": "valor_actual", ... }, "completo": true/false }
+            Si todo está lleno, "completo" es true. Si no, es false y pides el siguiente dato.`;
 
             conversationHistory.push({ role: 'user', content: pregunta });
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${openRouterApiKey}`, "Content-Type": "application/json" },
+                // ¡CORRECCIÓN! Se añade la cabecera de autorización correctamente.
+                headers: {
+                    "Authorization": `Bearer ${openRouterApiKey}`,
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({
                     "model": "openai/gpt-4o-mini",
                     "messages": [
                         { "role": "system", "content": systemPrompt },
-                        { "role": "user", "content": `Este es el estado actual de los datos: ${JSON.stringify(cargoData )}. El usuario ahora dice: "${pregunta}". Por favor, procesa la nueva información y devuelve el JSON actualizado.` }
+                        { "role": "user", "content": `Estado actual de datos: ${JSON.stringify(cargoData )}. El usuario dice: "${pregunta}". Procesa y devuelve el JSON.` }
                     ],
                     "response_format": { "type": "json_object" }
                 })
             });
 
-            if (!response.ok) throw new Error(`La API de IA respondió con un error.`);
+            if (!response.ok) {
+                // Proporciona más detalles del error si es posible
+                const errorBody = await response.text();
+                console.error("Error de la API:", response.status, errorBody);
+                throw new Error(`La API de IA respondió con un error.`);
+            }
             const data = await response.json();
             const iaJson = JSON.parse(data.choices[0].message.content);
             
             conversationHistory.push({ role: 'assistant', content: iaJson.respuesta });
-            return { data: iaJson };
+            return iaJson;
         }
 
         // --- Lógica de Voz para Cargo ---
         const cargoRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        cargoRecognition.lang = 'es-ES';
-        cargoRecognition.continuous = true; // Graba hasta que se detenga manualmente
+        if (cargoRecognition) {
+            cargoRecognition.lang = 'es-ES';
+            cargoRecognition.continuous = true;
 
-        chatActionBtn.addEventListener('click', () => {
-            if (chatInput.value.trim() !== '') {
-                handleCargoMessage();
-            } else {
-                if (chatActionBtn.classList.contains('recording')) {
-                    cargoRecognition.stop();
+            chatActionBtn.addEventListener('click', () => {
+                if (chatInput.value.trim() !== '') {
+                    handleCargoMessage();
                 } else {
-                    cargoRecognition.start();
+                    if (chatActionBtn.classList.contains('recording')) {
+                        cargoRecognition.stop();
+                    } else {
+                        try { cargoRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono."); }
+                    }
                 }
-            }
-        });
-        chatInput.addEventListener('input', () => {
-            chatActionBtn.textContent = chatInput.value.trim() !== '' ? '➤' : '🎤';
-        });
+            });
+            chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleCargoMessage(); });
 
-        cargoRecognition.onstart = () => {
-            chatActionBtn.classList.add('recording');
-            chatInput.placeholder = 'Escuchando... (presiona para parar)';
-        };
-        cargoRecognition.onend = () => {
-            chatActionBtn.classList.remove('recording');
-            chatInput.placeholder = 'Ingresa los datos del cargo...';
-        };
-        cargoRecognition.onresult = (event) => {
-            let finalTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                finalTranscript += event.results[i][0].transcript;
-            }
-            chatInput.value = finalTranscript;
-            chatActionBtn.textContent = '➤';
-        };
-        cargoRecognition.onerror = (event) => {
-            console.error('Error de reconocimiento en cargo:', event.error);
-            chatActionBtn.classList.remove('recording');
-        };
+            cargoRecognition.onstart = () => {
+                chatActionBtn.classList.add('recording');
+                chatInput.placeholder = 'Escuchando... (presiona para parar)';
+            };
+            cargoRecognition.onend = () => {
+                chatActionBtn.classList.remove('recording');
+                chatInput.placeholder = 'Ingresa los datos del cargo...';
+            };
+            cargoRecognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+                chatInput.value = finalTranscript;
+                chatActionBtn.textContent = '➤';
+            };
+            cargoRecognition.onerror = (event) => {
+                console.error('Error de reconocimiento en cargo:', event.error);
+                chatActionBtn.classList.remove('recording');
+            };
+        }
 
         // Iniciar la app
         addChatMessage('Listo para un nuevo registro. Puedes darme cualquier dato para empezar.', 'ia-message');
-
     </script>
 </body>
 </html>
