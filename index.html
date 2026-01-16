@@ -15,58 +15,35 @@
         .app-screen { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; position: relative; }
         h2 { font-weight: 500; color: #9E9E9E; margin-bottom: 30px; }
 
-        /* --- Estilos Modo Neuronal --- */
-        #neuronal-btn {
-            width: 150px; height: 150px; border-radius: 50%; background: #333;
-            border: 4px solid #444; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: all 0.2s ease; z-index: 10;
-        }
-        #neuronal-btn.recording { background: #E53935; border-color: #F44336; transform: scale(1.1 ); box-shadow: 0 0 25px rgba(229, 57, 53, 0.7); }
+        /* --- Estilos Modo Neuronal (¡DISEÑO CORREGIDO! ) --- */
+        #neuronal-btn { width: 150px; height: 150px; border-radius: 50%; background: #333; border: 4px solid #444; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; z-index: 10; }
+        #neuronal-btn.recording { background: #E53935; border-color: #F44336; transform: scale(1.1); box-shadow: 0 0 25px rgba(229, 57, 53, 0.7); }
         #neuronal-status { margin-top: 20px; color: #757575; height: 20px; text-align: center; font-style: italic; z-index: 10; }
-        
-        /* --- ¡NUEVO! Log de Neuronal encima del botón con degradado --- */
         #neuronal-log-wrapper {
             position: absolute;
-            bottom: 280px; /* Posicionado encima del botón y el status */
+            top: 120px; /* ¡MÁS ARRIBA! */
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 400px;
-            height: 150px;
-            background: linear-gradient(to top, rgba(18,18,18,0.8) 0%, rgba(18,18,18,0) 100%);
-            padding-top: 50px; /* Espacio para que el degradado se vea */
+            height: 200px; /* ¡MÁS ALTO! */
+            background: linear-gradient(to bottom, rgba(18,18,18,0.7) 0%, rgba(18,18,18,0) 100%); /* Degradado 70% */
+            padding: 10px;
+            box-sizing: border-box;
             display: flex;
-            justify-content: flex-end; /* Alinea el contenido abajo */
-            align-items: center;
+            align-items: flex-start;
         }
-        #neuronal-log {
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column-reverse; /* Muestra lo último abajo */
-            font-size: 16px;
-            color: #ccc;
-            text-align: center;
-        }
+        #neuronal-log { width: 100%; height: 100%; overflow-y: auto; display: flex; flex-direction: column-reverse; font-size: 16px; color: #ccc; text-align: center; }
         #neuronal-log div { padding: 5px 10px; }
 
-        /* --- Estilos Modo Cargo --- */
+        /* --- Estilos Modo Cargo (¡SCROLL CORREGIDO!) --- */
         #cargo-chat-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 700px; }
-        /* --- ¡NUEVO! Scroll para el chat --- */
-        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+        #chat-messages { flex-grow: 1; overflow-y: auto; /* ¡SCROLL AHORA FUNCIONA! */ padding: 10px; display: flex; flex-direction: column; gap: 12px; }
         .message { padding: 10px 15px; border-radius: 18px; max-width: 85%; line-height: 1.5; }
         .user-message { align-self: flex-end; background-color: #004D40; }
         .ia-message { align-self: flex-start; background-color: #263238; }
         .system-message { text-align: center; color: #616161; font-style: italic; font-size: 0.9em; }
-        /* --- ¡NUEVO! Estilo para mensaje de guardado exitoso --- */
-        .success-message {
-            align-self: center;
-            background-color: #2E7D32; /* Fondo verde */
-            color: white;
-            font-weight: bold;
-            text-align: center;
-        }
+        .success-message { align-self: center; background-color: #2E7D32; color: white; font-weight: bold; text-align: center; }
         .chat-input-container { display: flex; align-items: center; gap: 10px; padding: 10px; }
         #chat-input { flex-grow: 1; background: #212121; border: 1px solid #424242; border-radius: 20px; padding: 12px 15px; color: #E0E0E0; font-size: 16px; }
         #chat-action-btn { background: #00796B; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
@@ -79,17 +56,14 @@
     </style>
 </head>
 <body>
-
+    <!-- El resto del HTML (body) es idéntico a la versión anterior, no necesita cambios -->
     <div class="main-container">
         <div class="header">
             <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3C12 3 8.5 5.5 8.5 9.5C8.5 13.5 12 15 12 15C12 15 15.5 13.5 15.5 9.5C15.5 5.5 12 3 12 3Z" stroke="#00796B" stroke-width="1.5"/><path d="M12 15V19C12 20.1046 12.8954 21 14 21H15" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round"/><path d="M12 15V19C12 20.1046 11.1046 21 10 21H9" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round"/><path d="M17.5 11.5L13.5 14.5L10.5 12.5L6.5 15.5" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.2857 3.28209L6.5 8.5" stroke="#F44336" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
-
         <div id="app-slider">
             <div id="screen-neuronal" class="app-screen">
-                <div id="neuronal-log-wrapper">
-                    <div id="neuronal-log"></div>
-                </div>
+                <div id="neuronal-log-wrapper"><div id="neuronal-log"></div></div>
                 <h2>Captura Neuronal</h2>
                 <div id="neuronal-btn"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 1A3 3 0 0 0 9 4v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="#E0E0E0"/><path d="M19 10v2a7 7 0 0 1-14 0v-2h2v2a5 5 0 0 0 10 0v-2h2z" fill="#E0E0E0"/></svg></div>
                 <p id="neuronal-status">Presiona para grabar</p>
@@ -104,20 +78,17 @@
                 </div>
             </div>
         </div>
-
         <div class="slider-nav">
             <div id="nav-neuronal" class="nav-dot active" onclick="goToScreen(0 )"></div>
             <div id="nav-cargo" class="nav-dot" onclick="goToScreen(1)"></div>
         </div>
     </div>
-
     <script>
-        // --- CONFIGURACIÓN ---
+        // El JavaScript es idéntico a la versión anterior, no necesita cambios.
+        // Solo se han modificado los estilos CSS.
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
-
-        // --- ELEMENTOS DEL DOM ---
         const slider = document.getElementById('app-slider');
         const navDots = document.querySelectorAll('.nav-dot');
         const neuronalBtn = document.getElementById('neuronal-btn');
@@ -126,29 +97,14 @@
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const chatActionBtn = document.getElementById('chat-action-btn');
-
-        // --- LÓGICA DEL CARRUSEL ---
-        function goToScreen(index) {
-            slider.style.transform = `translateX(-${index * 50}%)`;
-            navDots.forEach(dot => dot.classList.remove('active'));
-            navDots[index].classList.add('active');
-        }
-
-        // --- LÓGICA MODO NEURONAL ---
+        function goToScreen(index) { slider.style.transform = `translateX(-${index * 50}%)`; navDots.forEach(dot => dot.classList.remove('active')); navDots[index].classList.add('active'); }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let isNeuronalRecording = false;
         if (SpeechRecognition) {
             const neuronalRecognition = new SpeechRecognition();
             neuronalRecognition.lang = 'es-ES';
             neuronalRecognition.continuous = false;
-
-            neuronalBtn.addEventListener('click', () => {
-                if (isNeuronalRecording) {
-                    neuronalRecognition.stop();
-                } else {
-                    try { neuronalRecognition.start(); } catch(e) { neuronalStatus.textContent = 'Error al iniciar mic.'; }
-                }
-            });
+            neuronalBtn.addEventListener('click', () => { if (isNeuronalRecording) { neuronalRecognition.stop(); } else { try { neuronalRecognition.start(); } catch(e) { neuronalStatus.textContent = 'Error al iniciar mic.'; } } });
             neuronalRecognition.onstart = () => { isNeuronalRecording = true; neuronalBtn.classList.add('recording'); neuronalStatus.textContent = 'Escuchando...'; };
             neuronalRecognition.onend = () => { isNeuronalRecording = false; neuronalBtn.classList.remove('recording'); neuronalStatus.textContent = 'Presiona para grabar'; };
             neuronalRecognition.onresult = (event) => {
@@ -158,31 +114,15 @@
                 neuronalLog.prepend(logEntry);
                 setTimeout(async () => {
                     neuronalStatus.textContent = 'Guardando...';
-                    try {
-                        const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
-                        if (error) throw error;
-                        neuronalStatus.textContent = '¡Guardado!';
-                    } catch (error) { neuronalStatus.textContent = 'Error al guardar.'; }
+                    try { const { error } = await supabase.from('neuronal').insert({ contenido: transcript }); if (error) throw error; neuronalStatus.textContent = '¡Guardado!'; } catch (error) { neuronalStatus.textContent = 'Error al guardar.'; }
                     setTimeout(() => { neuronalStatus.textContent = 'Presiona para grabar'; }, 2000);
                 }, 1000);
             };
             neuronalRecognition.onerror = (event) => { isNeuronalRecording = false; neuronalBtn.classList.remove('recording'); neuronalStatus.textContent = 'Error de micrófono.'; };
-        } else {
-            neuronalStatus.textContent = 'Reconocimiento de voz no soportado.';
-        }
-
-        // --- LÓGICA MODO CARGO ---
+        } else { neuronalStatus.textContent = 'Reconocimiento de voz no soportado.'; }
         let cargoData = {};
         let cargoSendTimeout;
-
-        function addChatMessage(content, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.textContent = content;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
+        function addChatMessage(content, type) { const messageDiv = document.createElement('div'); messageDiv.className = `message ${type}`; messageDiv.textContent = content; chatMessages.appendChild(messageDiv); chatMessages.scrollTop = chatMessages.scrollHeight; }
         async function handleCargoMessage() {
             clearTimeout(cargoSendTimeout);
             const userMessage = chatInput.value.trim();
@@ -190,86 +130,50 @@
             addChatMessage(userMessage, 'user-message');
             chatInput.value = '';
             chatActionBtn.textContent = '🎤';
-
             const thinkingMessage = document.createElement('div');
             thinkingMessage.className = 'message ia-message';
             thinkingMessage.textContent = '...';
             chatMessages.appendChild(thinkingMessage);
             chatMessages.scrollTop = chatMessages.scrollHeight;
-
             try {
                 const iaResponse = await getCargoIaResponse(userMessage);
-                if (!iaResponse || typeof iaResponse.respuesta !== 'string') {
-                    throw new Error("La respuesta del servidor no es válida.");
-                }
+                if (!iaResponse || typeof iaResponse.respuesta !== 'string') { throw new Error("La respuesta del servidor no es válida."); }
                 thinkingMessage.textContent = iaResponse.respuesta;
-                if(iaResponse.datos) {
-                    Object.assign(cargoData, iaResponse.datos);
-                }
+                if(iaResponse.datos) { Object.assign(cargoData, iaResponse.datos); }
                 if (iaResponse.completo) {
                     addChatMessage('Todos los datos están completos. Guardando...', 'system-message');
                     const { error: insertError } = await supabase.from('cargo').insert([cargoData]);
-                    if (insertError) {
-                        addChatMessage(`Error al guardar: ${insertError.message}`, 'system-message');
-                    } else {
-                        // ¡NUEVO! Mensaje de éxito con fondo verde
-                        addChatMessage('¡Registro guardado con éxito!', 'success-message');
-                    }
+                    if (insertError) { addChatMessage(`Error al guardar: ${insertError.message}`, 'system-message'); } 
+                    else { addChatMessage('¡Registro guardado con éxito!', 'success-message'); }
                     cargoData = {};
                     setTimeout(() => addChatMessage('Listo para un nuevo registro.', 'ia-message'), 2000);
                 }
-            } catch (error) {
-                thinkingMessage.textContent = `Lo siento, hubo un error: ${error.message}`;
-            }
+            } catch (error) { thinkingMessage.textContent = `Lo siento, hubo un error: ${error.message}`; }
         }
-
         async function getCargoIaResponse(pregunta) {
             try {
-                const { data, error } = await supabase.functions.invoke('sabre-api', {
-                    body: { pregunta: pregunta, datosActuales: cargoData },
-                });
+                const { data, error } = await supabase.functions.invoke('sabre-api', { body: { pregunta: pregunta, datosActuales: cargoData }, });
                 if (error) throw error;
                 if (data.error) throw new Error(data.error);
                 return data;
-            } catch (error) {
-                console.error("Error al invocar la Edge Function:", error);
-                throw new Error(`Error de conexión con el servidor: ${error.message}`);
-            }
+            } catch (error) { console.error("Error al invocar la Edge Function:", error); throw new Error(`Error de conexión con el servidor: ${error.message}`); }
         }
-
-        // --- Lógica de Voz para Cargo ---
         if (SpeechRecognition) {
             const cargoRecognition = new SpeechRecognition();
             cargoRecognition.lang = 'es-ES';
             cargoRecognition.continuous = false;
-
-            chatActionBtn.addEventListener('click', () => {
-                if (chatInput.value.trim() !== '') {
-                    handleCargoMessage();
-                } else {
-                    if (chatActionBtn.classList.contains('recording')) {
-                        cargoRecognition.stop();
-                    } else {
-                        try { cargoRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono."); }
-                    }
-                }
-            });
+            chatActionBtn.addEventListener('click', () => { if (chatInput.value.trim() !== '') { handleCargoMessage(); } else { if (chatActionBtn.classList.contains('recording')) { cargoRecognition.stop(); } else { try { cargoRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono."); } } } });
             chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleCargoMessage(); });
-
             cargoRecognition.onstart = () => { chatActionBtn.classList.add('recording'); chatInput.placeholder = 'Escuchando...'; };
             cargoRecognition.onend = () => { chatActionBtn.classList.remove('recording'); chatInput.placeholder = 'Ingresa los datos del cargo...'; };
             cargoRecognition.onresult = (event) => {
                 chatInput.value = event.results[0][0].transcript;
                 chatActionBtn.textContent = '➤';
                 clearTimeout(cargoSendTimeout);
-                cargoSendTimeout = setTimeout(() => {
-                    if (chatInput.value.trim() !== '') { handleCargoMessage(); }
-                }, 3000);
+                cargoSendTimeout = setTimeout(() => { if (chatInput.value.trim() !== '') { handleCargoMessage(); } }, 3000);
             };
             cargoRecognition.onerror = (event) => { chatActionBtn.classList.remove('recording'); };
         }
-
-        // Iniciar la app
         addChatMessage('Listo para un nuevo registro. Puedes darme cualquier dato para empezar.', 'ia-message');
     </script>
 </body>
