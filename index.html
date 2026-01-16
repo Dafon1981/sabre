@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prueba de API OpenRouter</title>
+    <title>Prueba de API (Nueva Clave)</title>
     <style>
         body { font-family: sans-serif; background-color: #282c34; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .chat-container { width: 90%; max-width: 600px; height: 80vh; display: flex; flex-direction: column; border: 1px solid #61dafb; border-radius: 8px; }
+        h1 { text-align: center; font-size: 1.5em; }
         #messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; }
         .user { background-color: #005f5f; align-self: flex-end; }
@@ -29,37 +30,26 @@
 
     <script>
         // --- CONFIGURACIÓN ---
-        // ¡IMPORTANTE! Pega tu clave de API aquí.
-        const openRouterApiKey = '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';
+        // ¡HE INSERTADO TU NUEVA CLAVE AQUÍ!
+        const openRouterApiKey = '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';
 
         // --- ELEMENTOS DEL DOM ---
         const messagesDiv = document.getElementById('messages');
         const inputText = document.getElementById('input-text');
         const actionBtn = document.getElementById('action-btn');
 
-        // --- LÓGICA DEL CHAT ---
-        function addMessage(text, sender) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}`;
-            msgDiv.textContent = text;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
+        // --- LÓGICA DEL CHAT (Simple y directa para probar la conexión) ---
         async function sendMessage() {
             const userText = inputText.value.trim();
             if (!userText) return;
-
             addMessage(userText, 'user');
             inputText.value = '';
             actionBtn.textContent = '🎤';
-
             const thinkingMsg = document.createElement('div');
             thinkingMsg.className = 'message ia';
             thinkingMsg.textContent = '...';
             messagesDiv.appendChild(thinkingMsg);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
             try {
                 const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
@@ -68,73 +58,50 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        "model": "google/gemini-flash-1.5", // Un modelo rápido y fiable para probar
+                        "model": "google/gemini-flash-1.5",
                         "messages": [
-                            { "role": "system", "content": "Eres un asistente de prueba. Responde de forma breve y directa." },
+                            { "role": "system", "content": "Eres un asistente de prueba. Responde 'Conexión exitosa' si recibes este mensaje." },
                             { "role": "user", "content": userText }
                         ]
                     } )
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Error de la API (${response.status}): ${errorText}`);
                 }
-
                 const data = await response.json();
-                const iaText = data.choices[0].message.content;
-                thinkingMsg.textContent = iaText;
-
+                thinkingMsg.textContent = data.choices[0].message.content;
             } catch (error) {
                 console.error("Error detallado:", error);
                 thinkingMsg.textContent = `ERROR: ${error.message}`;
             }
         }
-
-        // --- LÓGICA DE VOZ ---
+        
+        // --- Funciones auxiliares y de voz (sin cambios) ---
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.lang = 'es-ES';
-            recognition.onresult = (event) => {
-                inputText.value = event.results[0][0].transcript;
-                actionBtn.textContent = '➤';
-            };
-            recognition.onerror = (event) => {
-                console.error("Error de voz:", event.error);
-                alert("Error de micrófono: " + event.error);
-            };
+            recognition.onresult = (event) => { inputText.value = event.results[0][0].transcript; actionBtn.textContent = '➤'; };
+            recognition.onerror = (event) => { alert("Error de micrófono: " + event.error); };
         }
-
         actionBtn.addEventListener('click', () => {
-            if (inputText.value.trim()) {
-                sendMessage();
-            } else if (recognition) {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    alert("No se pudo iniciar el micrófono. Puede que ya esté en uso.");
-                }
-            } else {
-                alert("Tu navegador no soporta reconocimiento de voz.");
-            }
+            if (inputText.value.trim()) { sendMessage(); } 
+            else if (recognition) { try { recognition.start(); } catch (e) { alert("No se pudo iniciar el micrófono."); } }
+            else { alert("Tu navegador no soporta reconocimiento de voz."); }
         });
-
-        inputText.addEventListener('input', () => {
-            actionBtn.textContent = inputText.value.trim() ? '➤' : '🎤';
-        });
-        
-        inputText.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        addMessage("Hola, soy el asistente de prueba. Envíame un mensaje para verificar la conexión con la API.", "ia");
+        inputText.addEventListener('input', () => { actionBtn.textContent = inputText.value.trim() ? '➤' : '🎤'; });
+        inputText.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        addMessage("Listo para probar la nueva clave. Envíame un mensaje.", "ia");
     </script>
 
 </body>
 </html>
-
-
