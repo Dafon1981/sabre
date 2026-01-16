@@ -10,7 +10,7 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: #E0E0E0; }
         .main-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
         .header { text-align: center; padding: 15px; }
-        .logo { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #00796B; } /* ¡NUEVO LOGO! */
+        .logo { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #00796B; }
         #app-slider { flex-grow: 1; display: flex; width: 200%; transition: transform 0.4s ease-in-out; }
         .app-screen { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
 
@@ -28,26 +28,30 @@
         }
         #neuronal-log div { padding-bottom: 5px; }
 
-        /* --- Estilos Modo Cargo (¡SCROLL Y LIST BOX CORREGIDOS!) --- */
+        /* --- Estilos Modo Cargo (¡LAYOUT CORREGIDO!) --- */
         #cargo-chat-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 700px; overflow: hidden; }
-        #chat-messages-container { /* ¡NUEVO CONTENEDOR VISUAL! */
-            flex-grow: 1;
+        #chat-messages-container {
+            flex-grow: 1; /* Ocupa todo el espacio disponible */
+            overflow-y: auto; /* El scroll estará aquí */
+            display: flex;
+            flex-direction: column-reverse; /* Ancla los mensajes abajo */
             border: 1px solid #333;
             background-color: #1a1a1a;
             border-radius: 15px;
             padding: 10px;
             margin-bottom: 10px;
-            overflow-y: auto; /* ¡SCROLL DEFINITIVO! */
-            display: flex;
-            flex-direction: column-reverse;
         }
         #chat-messages { display: flex; flex-direction: column; gap: 12px; }
+        .chat-input-container {
+            flex-shrink: 0; /* Evita que la caja de input se encoja */
+            display: flex; align-items: center; gap: 10px; padding: 10px 0;
+        }
+        /* El resto de los estilos del chat no necesitan cambios */
         .message { padding: 10px 15px; border-radius: 18px; max-width: 85%; line-height: 1.5; }
         .user-message { align-self: flex-end; background-color: #004D40; }
         .ia-message { align-self: flex-start; background-color: #263238; }
         .system-message { text-align: center; color: #616161; font-style: italic; font-size: 0.9em; }
         .success-message { align-self: center; background-color: #2E7D32; color: white; font-weight: bold; text-align: center; }
-        .chat-input-container { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
         #chat-input { flex-grow: 1; background: #212121; border: 1px solid #424242; border-radius: 20px; padding: 12px 15px; color: #E0E0E0; font-size: 16px; }
         #chat-action-btn { background: #00796B; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
         #chat-action-btn.recording { background-color: #E53935; }
@@ -59,9 +63,9 @@
     </style>
 </head>
 <body>
+    <!-- El HTML del body no necesita cambios -->
     <div class="main-container">
         <div class="header">
-            <!-- ¡NUEVO LOGO! -->
             <img src="https://raw.githubusercontent.com/Dafon1981/sabre/main/7f2d2a09-b8de-46a8-b49c-fb764c146935.jpg" alt="Sabre Logo" class="logo">
         </div>
         <div id="app-slider">
@@ -75,7 +79,6 @@
             </div>
             <div id="screen-cargo" class="app-screen">
                 <div id="cargo-chat-wrapper">
-                    <!-- ¡NUEVA ESTRUCTURA PARA EL CHAT! -->
                     <div id="chat-messages-container">
                         <div id="chat-messages"></div>
                     </div>
