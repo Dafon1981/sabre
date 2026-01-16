@@ -22,7 +22,7 @@
             width: 60px; height: 60px;
         }
         #app-slider {
-            flex-grow: 1; display: flex; width: 200%; /* Dos pantallas */
+            flex-grow: 1; display: flex; width: 200%;
             transition: transform 0.4s ease-in-out;
         }
         .app-screen {
@@ -43,8 +43,20 @@
             transform: scale(1.1); box-shadow: 0 0 25px rgba(229, 57, 53, 0.7);
         }
         #neuronal-status {
-            margin-top: 20px; color: #757575; height: 40px; /* Más altura para el texto */
+            margin-top: 20px; color: #757575; height: 20px;
             text-align: center; font-style: italic;
+        }
+        /* ¡NUEVO! Listbox para transcripciones neuronales */
+        #neuronal-log {
+            width: 90%; max-width: 400px; height: 100px;
+            background-color: #1e1e1e; border: 1px solid #333;
+            border-radius: 8px; margin-top: 15px;
+            overflow-y: auto; padding: 10px;
+            display: flex; flex-direction: column-reverse; /* Muestra lo más nuevo arriba */
+            font-size: 14px; color: #aaa;
+        }
+        #neuronal-log div {
+            padding-bottom: 5px;
         }
 
         /* --- Estilos Modo Cargo (Chat) --- */
@@ -112,7 +124,8 @@
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2h2v2a5 5 0 0 0 10 0v-2h2z" fill="#E0E0E0"/>
                     </svg>
                 </div>
-                <p id="neuronal-status">Presiona para grabar</p>
+                <p id="neuronal-status">Mantén presionado para grabar</p>
+                <div id="neuronal-log"></div> <!-- ¡NUEVO! -->
             </div>
 
             <!-- Pantalla 2: Cargo -->
@@ -137,7 +150,7 @@
         // --- CONFIGURACIÓN ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
-        const openRouterApiKey = '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';
+        const openRouterApiKey = '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'; // ¡NUEVA CLAVE!
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
         // --- ELEMENTOS DEL DOM ---
@@ -145,6 +158,7 @@
         const navDots = document.querySelectorAll('.nav-dot');
         const neuronalBtn = document.getElementById('neuronal-btn');
         const neuronalStatus = document.getElementById('neuronal-status');
+        const neuronalLog = document.getElementById('neuronal-log'); // ¡NUEVO!
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const chatActionBtn = document.getElementById('chat-action-btn');
@@ -157,45 +171,56 @@
         }
 
         // --- LÓGICA MODO NEURONAL (MEJORADA) ---
-        const neuronalRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        if (neuronalRecognition) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let isNeuronalRecording = false;
+        if (SpeechRecognition) {
+            const neuronalRecognition = new SpeechRecognition();
             neuronalRecognition.lang = 'es-ES';
             neuronalRecognition.continuous = false;
 
-            neuronalBtn.addEventListener('mousedown', () => {
-                neuronalBtn.classList.add('recording');
-                neuronalStatus.textContent = 'Escuchando...';
-                try { neuronalRecognition.start(); } catch(e) { neuronalStatus.textContent = 'Error al iniciar mic.'; }
+            neuronalBtn.addEventListener('click', () => {
+                if (isNeuronalRecording) {
+                    neuronalRecognition.stop();
+                } else {
+                    try { neuronalRecognition.start(); } catch(e) { neuronalStatus.textContent = 'Error al iniciar mic.'; }
+                }
             });
 
-            neuronalBtn.addEventListener('mouseup', () => {
+            neuronalRecognition.onstart = () => {
+                isNeuronalRecording = true;
+                neuronalBtn.classList.add('recording');
+                neuronalStatus.textContent = 'Escuchando... (presiona para parar)';
+            };
+
+            neuronalRecognition.onend = () => {
+                isNeuronalRecording = false;
                 neuronalBtn.classList.remove('recording');
-                neuronalRecognition.stop();
-            });
+                neuronalStatus.textContent = 'Mantén presionado para grabar';
+            };
 
             neuronalRecognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                // ¡NUEVO! Muestra el texto capturado inmediatamente.
-                neuronalStatus.textContent = `"${transcript}"`;
-                
-                // Espera 3 segundos y luego guarda.
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `> ${transcript}`;
+                neuronalLog.prepend(logEntry); // Añade al principio de la lista
+
                 setTimeout(async () => {
                     neuronalStatus.textContent = 'Guardando...';
                     try {
                         const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
                         if (error) throw error;
-                        neuronalStatus.textContent = '¡Guardado con éxito!';
+                        neuronalStatus.textContent = '¡Guardado!';
                     } catch (error) {
                         console.error('Error al guardar en neuronal:', error);
                         neuronalStatus.textContent = 'Error al guardar.';
                     }
-                    // Limpia el mensaje después de otros 3 segundos.
-                    setTimeout(() => { neuronalStatus.textContent = 'Presiona para grabar'; }, 3000);
-                }, 3000);
+                    setTimeout(() => { neuronalStatus.textContent = 'Mantén presionado para grabar'; }, 2000);
+                }, 1000);
             };
             neuronalRecognition.onerror = (event) => {
                 console.error('Error de reconocimiento neuronal:', event.error);
                 neuronalStatus.textContent = 'Error de micrófono.';
+                isNeuronalRecording = false;
                 neuronalBtn.classList.remove('recording');
             };
         } else {
@@ -205,6 +230,7 @@
         // --- LÓGICA MODO CARGO (CORREGIDA) ---
         let cargoData = {};
         let conversationHistory = [];
+        let cargoSendTimeout;
 
         function addChatMessage(content, type) {
             const messageDiv = document.createElement('div');
@@ -215,6 +241,7 @@
         }
 
         async function handleCargoMessage() {
+            clearTimeout(cargoSendTimeout); // Cancela el envío automático si se presiona el botón
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
             addChatMessage(userMessage, 'user-message');
@@ -231,7 +258,9 @@
                 const iaResponse = await getCargoIaResponse(userMessage);
                 
                 thinkingMessage.textContent = iaResponse.respuesta;
-                Object.assign(cargoData, iaResponse.datos);
+                if(iaResponse.datos) {
+                    Object.assign(cargoData, iaResponse.datos);
+                }
                 
                 if (iaResponse.completo) {
                     addChatMessage('Todos los datos están completos. Guardando...', 'system-message');
@@ -263,41 +292,36 @@
             { "respuesta": "Tu mensaje al usuario. Ej: 'Entendido. Ahora necesito el FUA.'", "datos": { "nombre": "valor_actual", ... }, "completo": true/false }
             Si todo está lleno, "completo" es true. Si no, es false y pides el siguiente dato.`;
 
-            conversationHistory.push({ role: 'user', content: pregunta });
+            const messages = [
+                { "role": "system", "content": systemPrompt },
+                { "role": "user", "content": `Este es el estado actual de los datos que ya he recolectado: ${JSON.stringify(cargoData)}. El usuario ahora me dice lo siguiente: "${pregunta}". Procesa esta nueva información, actualiza los datos que puedas y respóndeme con el JSON correspondiente.` }
+            ];
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
-                // ¡CORRECCIÓN! Se añade la cabecera de autorización correctamente.
                 headers: {
                     "Authorization": `Bearer ${openRouterApiKey}`,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     "model": "openai/gpt-4o-mini",
-                    "messages": [
-                        { "role": "system", "content": systemPrompt },
-                        { "role": "user", "content": `Estado actual de datos: ${JSON.stringify(cargoData )}. El usuario dice: "${pregunta}". Procesa y devuelve el JSON.` }
-                    ],
+                    "messages": messages,
                     "response_format": { "type": "json_object" }
-                })
+                } )
             });
 
             if (!response.ok) {
-                // Proporciona más detalles del error si es posible
                 const errorBody = await response.text();
                 console.error("Error de la API:", response.status, errorBody);
                 throw new Error(`La API de IA respondió con un error.`);
             }
             const data = await response.json();
-            const iaJson = JSON.parse(data.choices[0].message.content);
-            
-            conversationHistory.push({ role: 'assistant', content: iaJson.respuesta });
-            return iaJson;
+            return JSON.parse(data.choices[0].message.content);
         }
 
         // --- Lógica de Voz para Cargo ---
-        const cargoRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        if (cargoRecognition) {
+        if (SpeechRecognition) {
+            const cargoRecognition = new SpeechRecognition();
             cargoRecognition.lang = 'es-ES';
             cargoRecognition.continuous = true;
 
@@ -329,6 +353,14 @@
                 }
                 chatInput.value = finalTranscript;
                 chatActionBtn.textContent = '➤';
+                
+                // ¡NUEVO! Envío automático después de 3 segundos de inactividad.
+                clearTimeout(cargoSendTimeout);
+                cargoSendTimeout = setTimeout(() => {
+                    if (chatInput.value.trim() !== '') {
+                        handleCargoMessage();
+                    }
+                }, 3000);
             };
             cargoRecognition.onerror = (event) => {
                 console.error('Error de reconocimiento en cargo:', event.error);
