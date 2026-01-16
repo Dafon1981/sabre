@@ -6,98 +6,31 @@
     <title>Sabre</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
-        /* --- Estilos Base (Mobile First ) --- */
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: #121212; color: #E0E0E0;
-        }
-        .main-container {
-            width: 100%; height: 100%; display: flex; flex-direction: column;
-        }
-        .header {
-            text-align: center; padding: 20px;
-        }
-        .logo {
-            width: 60px; height: 60px;
-        }
-        #app-slider {
-            flex-grow: 1; display: flex; width: 200%;
-            transition: transform 0.4s ease-in-out;
-        }
-        .app-screen {
-            width: 50%; height: 100%; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
-        }
+        /* --- Estilos (sin cambios ) --- */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: #E0E0E0; }
+        .main-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .header { text-align: center; padding: 20px; }
+        .logo { width: 60px; height: 60px; }
+        #app-slider { flex-grow: 1; display: flex; width: 200%; transition: transform 0.4s ease-in-out; }
+        .app-screen { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         h2 { font-weight: 500; color: #9E9E9E; margin-bottom: 30px; }
-
-        /* --- Estilos Modo Neuronal --- */
-        #neuronal-btn {
-            width: 150px; height: 150px; border-radius: 50%;
-            background: #333; border: 4px solid #444;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: all 0.2s ease;
-        }
-        #neuronal-btn.recording {
-            background: #E53935; border-color: #F44336;
-            transform: scale(1.1); box-shadow: 0 0 25px rgba(229, 57, 53, 0.7);
-        }
-        #neuronal-status {
-            margin-top: 20px; color: #757575; height: 20px;
-            text-align: center; font-style: italic;
-        }
-        /* ¡NUEVO! Listbox para transcripciones neuronales */
-        #neuronal-log {
-            width: 90%; max-width: 400px; height: 100px;
-            background-color: #1e1e1e; border: 1px solid #333;
-            border-radius: 8px; margin-top: 15px;
-            overflow-y: auto; padding: 10px;
-            display: flex; flex-direction: column-reverse; /* Muestra lo más nuevo arriba */
-            font-size: 14px; color: #aaa;
-        }
-        #neuronal-log div {
-            padding-bottom: 5px;
-        }
-
-        /* --- Estilos Modo Cargo (Chat) --- */
-        #cargo-chat-wrapper {
-            width: 100%; height: 100%; display: flex; flex-direction: column;
-            max-width: 700px;
-        }
-        #chat-messages {
-            flex-grow: 1; overflow-y: auto; padding: 10px;
-            display: flex; flex-direction: column; gap: 12px;
-        }
-        .message {
-            padding: 10px 15px; border-radius: 18px; max-width: 85%;
-            line-height: 1.5;
-        }
+        #neuronal-btn { width: 150px; height: 150px; border-radius: 50%; background: #333; border: 4px solid #444; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; }
+        #neuronal-btn.recording { background: #E53935; border-color: #F44336; transform: scale(1.1); box-shadow: 0 0 25px rgba(229, 57, 53, 0.7); }
+        #neuronal-status { margin-top: 20px; color: #757575; height: 20px; text-align: center; font-style: italic; }
+        #neuronal-log { width: 90%; max-width: 400px; height: 100px; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; margin-top: 15px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column-reverse; font-size: 14px; color: #aaa; }
+        #neuronal-log div { padding-bottom: 5px; }
+        #cargo-chat-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 700px; }
+        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+        .message { padding: 10px 15px; border-radius: 18px; max-width: 85%; line-height: 1.5; }
         .user-message { align-self: flex-end; background-color: #004D40; }
         .ia-message { align-self: flex-start; background-color: #263238; }
         .system-message { text-align: center; color: #616161; font-style: italic; font-size: 0.9em; }
-
-        .chat-input-container {
-            display: flex; align-items: center; gap: 10px; padding: 10px;
-        }
-        #chat-input {
-            flex-grow: 1; background: #212121; border: 1px solid #424242;
-            border-radius: 20px; padding: 12px 15px; color: #E0E0E0; font-size: 16px;
-        }
-        #chat-action-btn {
-            background: #00796B; color: white; border: none; border-radius: 50%;
-            width: 50px; height: 50px; font-size: 24px; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; flex-shrink: 0;
-        }
+        .chat-input-container { display: flex; align-items: center; gap: 10px; padding: 10px; }
+        #chat-input { flex-grow: 1; background: #212121; border: 1px solid #424242; border-radius: 20px; padding: 12px 15px; color: #E0E0E0; font-size: 16px; }
+        #chat-action-btn { background: #00796B; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
         #chat-action-btn.recording { background-color: #E53935; }
-
-        /* --- Navegación del Carrusel --- */
-        .slider-nav {
-            display: flex; justify-content: center; gap: 15px; padding: 15px;
-        }
-        .nav-dot {
-            width: 10px; height: 10px; background: #424242;
-            border-radius: 50%; cursor: pointer; transition: background 0.3s;
-        }
+        .slider-nav { display: flex; justify-content: center; gap: 15px; padding: 15px; }
+        .nav-dot { width: 10px; height: 10px; background: #424242; border-radius: 50%; cursor: pointer; transition: background 0.3s; }
         .nav-dot.active { background: #00796B; }
     </style>
 </head>
@@ -105,30 +38,16 @@
 
     <div class="main-container">
         <div class="header">
-            <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 3C12 3 8.5 5.5 8.5 9.5C8.5 13.5 12 15 12 15C12 15 15.5 13.5 15.5 9.5C15.5 5.5 12 3 12 3Z" stroke="#00796B" stroke-width="1.5"/>
-                <path d="M12 15V19C12 20.1046 12.8954 21 14 21H15" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M12 15V19C12 20.1046 11.1046 21 10 21H9" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M17.5 11.5L13.5 14.5L10.5 12.5L6.5 15.5" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M10.2857 3.28209L6.5 8.5" stroke="#F44336" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+            <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3C12 3 8.5 5.5 8.5 9.5C8.5 13.5 12 15 12 15C12 15 15.5 13.5 15.5 9.5C15.5 5.5 12 3 12 3Z" stroke="#00796B" stroke-width="1.5"/><path d="M12 15V19C12 20.1046 12.8954 21 14 21H15" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round"/><path d="M12 15V19C12 20.1046 11.1046 21 10 21H9" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round"/><path d="M17.5 11.5L13.5 14.5L10.5 12.5L6.5 15.5" stroke="#E0E0E0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.2857 3.28209L6.5 8.5" stroke="#F44336" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
 
         <div id="app-slider">
-            <!-- Pantalla 1: Neuronal -->
             <div id="screen-neuronal" class="app-screen">
                 <h2>Captura Neuronal</h2>
-                <div id="neuronal-btn">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 1A3 3 0 0 0 9 4v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="#E0E0E0"/>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2h2v2a5 5 0 0 0 10 0v-2h2z" fill="#E0E0E0"/>
-                    </svg>
-                </div>
-                <p id="neuronal-status">Mantén presionado para grabar</p>
-                <div id="neuronal-log"></div> <!-- ¡NUEVO! -->
+                <div id="neuronal-btn"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 1A3 3 0 0 0 9 4v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="#E0E0E0"/><path d="M19 10v2a7 7 0 0 1-14 0v-2h2v2a5 5 0 0 0 10 0v-2h2z" fill="#E0E0E0"/></svg></div>
+                <p id="neuronal-status">Presiona para grabar</p>
+                <div id="neuronal-log"></div>
             </div>
-
-            <!-- Pantalla 2: Cargo -->
             <div id="screen-cargo" class="app-screen">
                 <div id="cargo-chat-wrapper">
                     <div id="chat-messages"></div>
@@ -150,7 +69,7 @@
         // --- CONFIGURACIÓN ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
-        const openRouterApiKey = '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'; // ¡NUEVA CLAVE!
+        const openRouterApiKey = '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';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
         // --- ELEMENTOS DEL DOM ---
@@ -158,7 +77,7 @@
         const navDots = document.querySelectorAll('.nav-dot');
         const neuronalBtn = document.getElementById('neuronal-btn');
         const neuronalStatus = document.getElementById('neuronal-status');
-        const neuronalLog = document.getElementById('neuronal-log'); // ¡NUEVO!
+        const neuronalLog = document.getElementById('neuronal-log');
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const chatActionBtn = document.getElementById('chat-action-btn');
@@ -185,51 +104,30 @@
                     try { neuronalRecognition.start(); } catch(e) { neuronalStatus.textContent = 'Error al iniciar mic.'; }
                 }
             });
-
-            neuronalRecognition.onstart = () => {
-                isNeuronalRecording = true;
-                neuronalBtn.classList.add('recording');
-                neuronalStatus.textContent = 'Escuchando... (presiona para parar)';
-            };
-
-            neuronalRecognition.onend = () => {
-                isNeuronalRecording = false;
-                neuronalBtn.classList.remove('recording');
-                neuronalStatus.textContent = 'Mantén presionado para grabar';
-            };
-
+            neuronalRecognition.onstart = () => { isNeuronalRecording = true; neuronalBtn.classList.add('recording'); neuronalStatus.textContent = 'Escuchando...'; };
+            neuronalRecognition.onend = () => { isNeuronalRecording = false; neuronalBtn.classList.remove('recording'); neuronalStatus.textContent = 'Presiona para grabar'; };
             neuronalRecognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 const logEntry = document.createElement('div');
                 logEntry.textContent = `> ${transcript}`;
-                neuronalLog.prepend(logEntry); // Añade al principio de la lista
-
+                neuronalLog.prepend(logEntry);
                 setTimeout(async () => {
                     neuronalStatus.textContent = 'Guardando...';
                     try {
                         const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
                         if (error) throw error;
                         neuronalStatus.textContent = '¡Guardado!';
-                    } catch (error) {
-                        console.error('Error al guardar en neuronal:', error);
-                        neuronalStatus.textContent = 'Error al guardar.';
-                    }
-                    setTimeout(() => { neuronalStatus.textContent = 'Mantén presionado para grabar'; }, 2000);
+                    } catch (error) { neuronalStatus.textContent = 'Error al guardar.'; }
+                    setTimeout(() => { neuronalStatus.textContent = 'Presiona para grabar'; }, 2000);
                 }, 1000);
             };
-            neuronalRecognition.onerror = (event) => {
-                console.error('Error de reconocimiento neuronal:', event.error);
-                neuronalStatus.textContent = 'Error de micrófono.';
-                isNeuronalRecording = false;
-                neuronalBtn.classList.remove('recording');
-            };
+            neuronalRecognition.onerror = (event) => { isNeuronalRecording = false; neuronalBtn.classList.remove('recording'); neuronalStatus.textContent = 'Error de micrófono.'; };
         } else {
             neuronalStatus.textContent = 'Reconocimiento de voz no soportado.';
         }
 
         // --- LÓGICA MODO CARGO (CORREGIDA) ---
         let cargoData = {};
-        let conversationHistory = [];
         let cargoSendTimeout;
 
         function addChatMessage(content, type) {
@@ -241,7 +139,7 @@
         }
 
         async function handleCargoMessage() {
-            clearTimeout(cargoSendTimeout); // Cancela el envío automático si se presiona el botón
+            clearTimeout(cargoSendTimeout);
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
             addChatMessage(userMessage, 'user-message');
@@ -257,6 +155,11 @@
             try {
                 const iaResponse = await getCargoIaResponse(userMessage);
                 
+                // Validación robusta de la respuesta de la IA
+                if (!iaResponse || typeof iaResponse.respuesta !== 'string' || typeof iaResponse.completo !== 'boolean') {
+                    throw new Error("La IA devolvió una respuesta inesperada. Intenta de nuevo.");
+                }
+
                 thinkingMessage.textContent = iaResponse.respuesta;
                 if(iaResponse.datos) {
                     Object.assign(cargoData, iaResponse.datos);
@@ -264,14 +167,13 @@
                 
                 if (iaResponse.completo) {
                     addChatMessage('Todos los datos están completos. Guardando...', 'system-message');
-                    const { error: insertError } = await supabase.from('cargo').insert(cargoData);
+                    const { error: insertError } = await supabase.from('cargo').insert([cargoData]); // Se envía como un array
                     if (insertError) {
                         addChatMessage(`Error al guardar: ${insertError.message}`, 'system-message');
                     } else {
                         addChatMessage('¡Registro guardado con éxito!', 'system-message');
                     }
                     cargoData = {};
-                    conversationHistory = [];
                     setTimeout(() => addChatMessage('Listo para un nuevo registro.', 'ia-message'), 1000);
                 }
             } catch (error) {
@@ -280,22 +182,39 @@
         }
 
         async function getCargoIaResponse(pregunta) {
-            const systemPrompt = `Eres un asistente de ingreso de datos para la tabla 'cargo'. Tu única función es extraer 5 campos: 'nfua', 'nombre', 'nro_historia', 'fecha_atencion', 'monto'.
-            **Reglas de Formateo Estrictas:**
-            1. **nfua:** 8 dígitos, rellenar con ceros a la izquierda. Ej: "9241" -> "00009241".
-            2. **nro_historia:** Formato 'E' + año (2 dígitos) + 8 dígitos. Ej: "E25 4981" -> "E2500004981". Total 10 dígitos después de 'E'.
-            3. **fecha_atencion:** Formato AAAA-MM-DD. Asume el año actual (2026) si no se especifica.
-            4. **monto:** Número. "tres soles cincuenta" -> 3.50.
-            5. **nombre:** Nombre completo.
-            **Proceso:** Recibes datos actuales y la nueva entrada. Extraes datos, actualizas el objeto, y revisas qué falta.
-            **Tu respuesta SIEMPRE debe ser un JSON con este formato:**
-            { "respuesta": "Tu mensaje al usuario. Ej: 'Entendido. Ahora necesito el FUA.'", "datos": { "nombre": "valor_actual", ... }, "completo": true/false }
-            Si todo está lleno, "completo" es true. Si no, es false y pides el siguiente dato.`;
+            // =================================================================
+            // ¡NUEVO PROMPT A PRUEBA DE BALAS!
+            // =================================================================
+            const systemPrompt = `
+                Tu única tarea es actuar como un analizador de texto que extrae 5 campos: 'nfua', 'nombre', 'nro_historia', 'fecha_atencion', 'monto'.
+                
+                **Reglas de Formateo:**
+                - **nfua:** 8 dígitos, rellenar con ceros a la izquierda (ej: "9241" -> "00009241").
+                - **nro_historia:** 'E' + 10 dígitos. Rellenar con ceros (ej: "E25 4981" -> "E2500004981").
+                - **fecha_atencion:** Formato AAAA-MM-DD. Asumir año 2026 si no se especifica.
+                - **monto:** Número (ej: "tres soles 50" -> 3.50).
+                - **nombre:** Nombre completo.
 
-            const messages = [
-                { "role": "system", "content": systemPrompt },
-                { "role": "user", "content": `Este es el estado actual de los datos que ya he recolectado: ${JSON.stringify(cargoData)}. El usuario ahora me dice lo siguiente: "${pregunta}". Procesa esta nueva información, actualiza los datos que puedas y respóndeme con el JSON correspondiente.` }
-            ];
+                **Proceso:**
+                1. Te daré los datos ya recolectados y una nueva frase del usuario.
+                2. Extrae CUALQUIER dato nuevo de la frase.
+                3. Devuelve un JSON con los datos actualizados y un mensaje para el usuario pidiendo el siguiente dato que FALTE.
+                4. Si todos los datos están completos, pon "completo": true.
+
+                **Formato de Salida OBLIGATORIO (solo JSON):**
+                {
+                  "respuesta": "Mensaje para el usuario",
+                  "datos": { "nfua": "...", "nombre": "...", ... },
+                  "completo": false
+                }
+            `;
+
+            const userPrompt = `
+                Datos actuales: ${JSON.stringify(cargoData)}
+                Frase del usuario: "${pregunta}"
+                
+                Analiza la frase, actualiza los datos y genera el JSON de respuesta.
+            `;
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
@@ -305,7 +224,10 @@
                 },
                 body: JSON.stringify({
                     "model": "openai/gpt-4o-mini",
-                    "messages": messages,
+                    "messages": [
+                        { "role": "system", "content": systemPrompt },
+                        { "role": "user", "content": userPrompt }
+                    ],
                     "response_format": { "type": "json_object" }
                 } )
             });
@@ -323,7 +245,7 @@
         if (SpeechRecognition) {
             const cargoRecognition = new SpeechRecognition();
             cargoRecognition.lang = 'es-ES';
-            cargoRecognition.continuous = true;
+            cargoRecognition.continuous = false; // Usar 'false' para que se detenga al dejar de hablar
 
             chatActionBtn.addEventListener('click', () => {
                 if (chatInput.value.trim() !== '') {
@@ -338,34 +260,17 @@
             });
             chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleCargoMessage(); });
 
-            cargoRecognition.onstart = () => {
-                chatActionBtn.classList.add('recording');
-                chatInput.placeholder = 'Escuchando... (presiona para parar)';
-            };
-            cargoRecognition.onend = () => {
-                chatActionBtn.classList.remove('recording');
-                chatInput.placeholder = 'Ingresa los datos del cargo...';
-            };
+            cargoRecognition.onstart = () => { chatActionBtn.classList.add('recording'); chatInput.placeholder = 'Escuchando...'; };
+            cargoRecognition.onend = () => { chatActionBtn.classList.remove('recording'); chatInput.placeholder = 'Ingresa los datos del cargo...'; };
             cargoRecognition.onresult = (event) => {
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    finalTranscript += event.results[i][0].transcript;
-                }
-                chatInput.value = finalTranscript;
+                chatInput.value = event.results[0][0].transcript;
                 chatActionBtn.textContent = '➤';
-                
-                // ¡NUEVO! Envío automático después de 3 segundos de inactividad.
                 clearTimeout(cargoSendTimeout);
                 cargoSendTimeout = setTimeout(() => {
-                    if (chatInput.value.trim() !== '') {
-                        handleCargoMessage();
-                    }
+                    if (chatInput.value.trim() !== '') { handleCargoMessage(); }
                 }, 3000);
             };
-            cargoRecognition.onerror = (event) => {
-                console.error('Error de reconocimiento en cargo:', event.error);
-                chatActionBtn.classList.remove('recording');
-            };
+            cargoRecognition.onerror = (event) => { chatActionBtn.classList.remove('recording'); };
         }
 
         // Iniciar la app
