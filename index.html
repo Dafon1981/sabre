@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2.3 (Gestión)</title>
+    <title>Sabre v2.4 (Final)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Generales y de Neuronal (sin cambios ) --- */
@@ -16,7 +16,7 @@
         #neuronal-mic-btn.recording { background-color: #dc3545; transform: scale(1.1); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.7); } 70% { box-shadow: 0 0 0 20px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
 
-        /* --- Estilos de Cargo (sin cambios en el formulario principal) --- */
+        /* --- Estilos de Cargo (sin cambios) --- */
         #cargo-page { justify-content: flex-start; padding-top: 60px; }
         #cargo-status { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #007bff; padding: 5px 15px; border-radius: 15px; font-weight: bold; }
         #cargo-form { width: 100%; max-width: 400px; }
@@ -27,9 +27,9 @@
         .btn-primary { background-color: #28a745; color: white; }
         .btn-secondary { background-color: #6c757d; color: white; }
         .btn-info { background-color: #17a2b8; color: white; }
-        .btn-warning { background-color: #ffc107; color: black; } /* Nuevo botón */
+        .btn-warning { background-color: #ffc107; color: black; }
 
-        /* --- Estilos del Modal de Gestión (¡Mejorado!) --- */
+        /* --- Estilos del Modal de Gestión (sin cambios) --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { background: #2a2a2a; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; display: flex; flex-direction: column; }
         #cargo-list-container { max-height: 70vh; overflow-y: auto; }
@@ -44,7 +44,7 @@
 <body>
 
     <div id="main-slider">
-        <!-- Página Neuronal -->
+        <!-- Página Neuronal (sin cambios) -->
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
             <p>Presiona el micrófono para grabar una nota.</p>
@@ -52,7 +52,7 @@
             <button id="neuronal-mic-btn">🎤</button>
         </div>
 
-        <!-- Página Cargo -->
+        <!-- Página Cargo (sin cambios) -->
         <div id="cargo-page" class="page-container">
             <div id="cargo-status">Cargo Actual: -</div>
             <form id="cargo-form">
@@ -63,13 +63,13 @@
                     <button type="submit" class="btn btn-primary">Añadir Registro al Cargo</button>
                     <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Imprimir</button>
                     <button type="button" id="manage-cargos-btn" class="btn btn-secondary">Ver/Gestionar Cargos</button>
-                    <button type="button" id="force-new-cargo-btn" class="btn btn-warning">Forzar Nuevo Cargo</button> <!-- ¡NUEVO BOTÓN! -->
+                    <button type="button" id="force-new-cargo-btn" class="btn btn-warning">Forzar Nuevo Cargo</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal para Gestionar Cargos -->
+    <!-- Modal para Gestionar Cargos (sin cambios) -->
     <div id="manage-cargos-modal" class="modal">
         <div class="modal-content">
             <h2>Gestor de Cargos</h2>
@@ -110,7 +110,7 @@
             else { try { neuronalRecognition.start(); } catch(e) { alert("Micrófono no disponible."); } }
         });
 
-        // --- LÓGICA DE CARGO (¡MEJORADA!) ---
+        // --- LÓGICA DE CARGO (con la función de imprimir corregida) ---
         const cargoForm = document.getElementById('cargo-form');
         const cargoStatus = document.getElementById('cargo-status');
         const manageCargosBtn = document.getElementById('manage-cargos-btn');
@@ -133,17 +133,12 @@
         }
 
         async function initializeCargo() {
-            const nextPos = await getNextPosition();
-            if (nextPos) {
-                // Por defecto, continuamos con el último cargo del día si existe.
-                const lastIndex = parseInt(nextPos.slice(nextPos.length - 1)) - 1;
-                if (lastIndex > 0) {
-                    currentPosition = nextPos.slice(0, -1) + lastIndex;
-                } else {
-                    currentPosition = nextPos;
-                }
+            const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false }).limit(1);
+            if (error) { alert("Error de conexión al inicializar."); return; }
+            if (data.length > 0) {
+                currentPosition = data[0].posicion;
             } else {
-                alert("Error de conexión al inicializar.");
+                currentPosition = await getNextPosition();
             }
             updateStatus();
         }
@@ -166,15 +161,63 @@
             else { alert('Registro añadido al cargo actual.'); cargoForm.reset(); }
         });
 
+        // ==================================================================
+        // ¡FUNCIÓN DE IMPRESIÓN CORREGIDA!
+        // ==================================================================
         generateListBtn.addEventListener('click', async () => {
-            const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition);
-            if (error || !data || data.length === 0) { alert('No hay registros en este cargo.'); return; }
-            let tableHTML = `<style>/* ... estilos de impresión ... */</style><h2>Cargo N°: ${currentPosition}</h2><table>...</table>`; // (código de impresión sin cambios)
+            const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
+            if (error || !data || data.length === 0) {
+                alert('No hay registros en el cargo actual para generar una lista.');
+                return;
+            }
+
+            let tableHTML = `
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <title>Cargo N° ${currentPosition}</title>
+                    <style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        h2 { text-align: center; }
+                        @media print {
+                            body { margin: 0; -webkit-print-color-adjust: exact; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Cargo N°: ${currentPosition} - Fecha: ${new Date().toLocaleDateString()}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>N° FUA</th>
+                                <th>Nombre Completo</th>
+                                <th>N° Historia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(row => `
+                                <tr>
+                                    <td>${row.nfua || ''}</td>
+                                    <td>${row.nombre || ''}</td>
+                                    <td>${row.nro_historia || ''}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
             const printWindow = window.open('', '_blank');
             printWindow.document.write(tableHTML);
             printWindow.document.close();
             printWindow.focus();
         });
+        // ==================================================================
 
         manageCargosBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false });
