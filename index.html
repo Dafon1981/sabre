@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2.8 (Definitivo)</title>
+    <title>Sabre v2.9 (Diseño Mejorado)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
-        /* --- Estilos (sin cambios ) --- */
+        /* --- Estilos Generales (sin cambios ) --- */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: white; }
         #main-slider { width: 100%; height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
         .page-container { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; text-align: center; }
+        
+        /* --- Estilos de Neuronal (sin cambios) --- */
         #neuronal-page h1 { margin-bottom: 10px; }
         #neuronal-log { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; width: 90%; max-width: 500px; height: 150px; overflow-y: auto; margin-bottom: 20px; text-align: left; }
         #neuronal-mic-btn { background-color: #007bff; color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 36px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: transform 0.2s, background-color 0.2s; }
         #neuronal-mic-btn.recording { background-color: #dc3545; transform: scale(1.1); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.7); } 70% { box-shadow: 0 0 0 20px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
+
+        /* --- Estilos de Cargo (con botones mejorados) --- */
         #cargo-page { justify-content: flex-start; padding-top: 60px; }
         #cargo-status { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #007bff; padding: 5px 15px; border-radius: 15px; font-weight: bold; }
         #cargo-form { width: 100%; max-width: 400px; }
@@ -24,6 +28,26 @@
         #nro_historia { padding-left: 28px !important; }
         #nfua::-webkit-outer-spin-button, #nfua::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         #nfua { -moz-appearance: textfield; }
+
+        /* ================================================================== */
+        /* ¡CSS DE BOTONES MEJORADO!                                          */
+        /* ================================================================== */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* Espacio uniforme entre botones */
+            margin-top: 25px;
+            width: 100%; /* Asegura que todos los botones tengan el mismo ancho */
+        }
+        /* ================================================================== */
+
+        .btn { padding: 15px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        .btn-primary { background-color: #28a745; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        
+        /* --- Estilos del Modal (sin cambios) --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { background: #2a2a2a; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; display: flex; flex-direction: column; }
         #cargo-list-container { max-height: 70vh; overflow-y: auto; }
@@ -32,16 +56,12 @@
         .cargo-item-content table { width: 100%; color: white; border-collapse: collapse; font-size: 12px; }
         .cargo-item-content th, .cargo-item-content td { padding: 8px; text-align: left; border-bottom: 1px solid #444; }
         .cargo-item-content .record-actions { margin-top: 10px; display: flex; gap: 10px; }
-        .btn { padding: 15px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
-        .btn-primary { background-color: #28a745; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-info { background-color: #17a2b8; color: white; }
-        .btn-warning { background-color: #ffc107; color: black; }
         .btn-danger { background-color: #dc3545; color: white; }
     </style>
 </head>
 <body>
 
+    <!-- HTML (sin cambios) -->
     <div id="main-slider">
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
@@ -59,9 +79,6 @@
                     <input type="text" id="nombre" placeholder="Nombre Completo" required>
                 </div>
                 <div class="input-group" id="nro_historia_group">
-                    <!-- ================================================================== -->
-                    <!-- ¡ÚNICO CAMBIO! Añadido inputmode="numeric"                      -->
-                    <!-- ================================================================== -->
                     <input type="text" id="nro_historia" placeholder="N° Historia" required inputmode="numeric">
                 </div>
                 <div class="action-buttons">
@@ -125,7 +142,7 @@
 
         function formatNfua(value) { return value.toString().padStart(7, '0'); }
         function formatNroHistoria(value) {
-            let cleanValue = value.replace(/[^0-9]/g, ''); // Limpiar cualquier no-número por si acaso
+            let cleanValue = value.replace(/[^0-9]/g, '');
             if (cleanValue.length === 9) { return 'E' + cleanValue; }
             if (cleanValue.length > 2 && cleanValue.length <= 8) {
                 const year = cleanValue.substring(0, 2);
