@@ -3,19 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2</title>
+    <title>Sabre v2.1</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
+        /* --- Estilos Generales (sin cambios ) --- */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: white; }
         #main-slider { width: 100%; height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
         .page-container { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; text-align: center; }
         
-        /* --- Estilos de Neuronal (sin cambios funcionales ) --- */
+        /* --- Estilos de Neuronal (¡Botón corregido!) --- */
         #neuronal-page h1 { margin-bottom: 10px; }
         #neuronal-log { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; width: 90%; max-width: 500px; height: 150px; overflow-y: auto; margin-bottom: 20px; text-align: left; }
-        #neuronal-mic-btn { background-color: #007bff; border-radius: 50%; width: 80px; height: 80px; /* ... etc */ }
-        
-        /* --- Estilos de Cargo (¡Completamente Nuevos!) --- */
+        #neuronal-mic-btn { 
+            background-color: #007bff; color: white; border: none; border-radius: 50%; 
+            width: 80px; height: 80px; font-size: 36px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        #neuronal-mic-btn.recording {
+            background-color: #dc3545;
+            transform: scale(1.1);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.7); } 70% { box-shadow: 0 0 0 20px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
+
+        /* --- Estilos de Cargo (sin cambios) --- */
         #cargo-page { justify-content: flex-start; padding-top: 60px; }
         #cargo-status { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #007bff; padding: 5px 15px; border-radius: 15px; font-weight: bold; }
         #cargo-form { width: 100%; max-width: 400px; }
@@ -26,8 +38,6 @@
         .btn-primary { background-color: #28a745; color: white; }
         .btn-secondary { background-color: #6c757d; color: white; }
         .btn-info { background-color: #17a2b8; color: white; }
-
-        /* --- Estilos del Modal de Gestión --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { background: #2a2a2a; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; }
         #cargo-list { max-height: 60vh; overflow-y: auto; }
@@ -39,28 +49,21 @@
 <body>
 
     <div id="main-slider">
-        <!-- Página Neuronal (simplificada para el ejemplo) -->
+        <!-- Página Neuronal -->
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
-            <p>Graba notas de voz rápidas.</p>
+            <p>Mantén presionado para grabar una nota.</p>
             <div id="neuronal-log"></div>
             <button id="neuronal-mic-btn">🎤</button>
         </div>
 
-        <!-- Página Cargo (¡La nueva estrella!) -->
+        <!-- Página Cargo -->
         <div id="cargo-page" class="page-container">
             <div id="cargo-status">Cargo Actual: -</div>
-            
             <form id="cargo-form">
-                <div class="input-group">
-                    <input type="text" id="nfua" placeholder="N° FUA" required>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="nombre" placeholder="Nombre Completo" required>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="nro_historia" placeholder="N° Historia" required>
-                </div>
+                <div class="input-group"><input type="text" id="nfua" placeholder="N° FUA" required></div>
+                <div class="input-group"><input type="text" id="nombre" placeholder="Nombre Completo" required></div>
+                <div class="input-group"><input type="text" id="nro_historia" placeholder="N° Historia" required></div>
                 <div class="action-buttons">
                     <button type="submit" class="btn btn-primary">Añadir Registro al Cargo</button>
                     <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Imprimir</button>
@@ -85,7 +88,67 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
-        // --- Elementos del DOM ---
+        // --- LÓGICA DE NEURONAL (¡RESTAURADA!) ---
+        const neuronalMicBtn = document.getElementById('neuronal-mic-btn');
+        const neuronalLog = document.getElementById('neuronal-log');
+        const NeuronalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let neuronalRecognition;
+        let isNeuronalRecording = false;
+
+        if (NeuronalSpeechRecognition) {
+            neuronalRecognition = new NeuronalSpeechRecognition();
+            neuronalRecognition.lang = 'es-ES';
+            neuronalRecognition.continuous = false; // Graba una sola frase
+
+            neuronalRecognition.onstart = () => {
+                isNeuronalRecording = true;
+                neuronalMicBtn.classList.add('recording');
+                neuronalMicBtn.textContent = '...';
+            };
+
+            neuronalRecognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                neuronalLog.innerHTML += `<div>- ${transcript}</div>`;
+                neuronalLog.scrollTop = neuronalLog.scrollHeight;
+
+                // Guardar en Supabase
+                const { error } = await supabase.from('neuronal').insert({ cita: transcript });
+                if (error) {
+                    neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error al guardar: ${error.message}</div>`;
+                } else {
+                    neuronalLog.innerHTML += `<div style="color: #a5d6a7;">Guardado ✓</div>`;
+                }
+            };
+
+            neuronalRecognition.onend = () => {
+                isNeuronalRecording = false;
+                neuronalMicBtn.classList.remove('recording');
+                neuronalMicBtn.textContent = '🎤';
+            };
+
+            neuronalRecognition.onerror = (event) => {
+                console.error('Error de reconocimiento en Neuronal:', event.error);
+                neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error de micrófono: ${event.error}</div>`;
+            };
+        }
+
+        neuronalMicBtn.addEventListener('mousedown', () => {
+            if (NeuronalSpeechRecognition && !isNeuronalRecording) {
+                try {
+                    neuronalRecognition.start();
+                } catch(e) {
+                    alert("No se pudo iniciar el micrófono. Puede que ya esté en uso.");
+                }
+            }
+        });
+
+        neuronalMicBtn.addEventListener('mouseup', () => {
+            if (NeuronalSpeechRecognition && isNeuronalRecording) {
+                neuronalRecognition.stop();
+            }
+        });
+        
+        // --- LÓGICA DE CARGO (SIN CAMBIOS) ---
         const cargoForm = document.getElementById('cargo-form');
         const cargoStatus = document.getElementById('cargo-status');
         const manageCargosBtn = document.getElementById('manage-cargos-btn');
@@ -94,90 +157,41 @@
         const generateListBtn = document.getElementById('generate-list-btn');
         let currentPosition = null;
 
-        // --- Lógica Principal de Cargo ---
         async function initializeCargo() {
             const today = new Date();
             const dateString = `${today.getDate()}${(today.getMonth() + 1)}${today.getFullYear()}`;
-            
-            // Busca el último cargo del día para determinar el siguiente índice
-            const { data, error } = await supabase
-                .from('cargo')
-                .select('posicion')
-                .like('posicion', `${dateString}%`)
-                .order('posicion', { ascending: false })
-                .limit(1);
-
-            if (error) {
-                console.error("Error al buscar último cargo:", error);
-                alert("Error de conexión. No se pudo inicializar el cargo.");
-                return;
-            }
-
+            const { data, error } = await supabase.from('cargo').select('posicion').like('posicion', `${dateString}%`).order('posicion', { ascending: false }).limit(1);
+            if (error) { console.error("Error al buscar último cargo:", error); alert("Error de conexión."); return; }
             if (data.length > 0) {
                 const lastPosition = data[0].posicion;
                 const lastIndex = parseInt(lastPosition.slice(dateString.length));
-                currentPosition = `${dateString}${lastIndex}`; // Continuar con el último cargo no cerrado
+                currentPosition = `${dateString}${lastIndex}`;
             } else {
-                currentPosition = `${dateString}1`; // Es el primer cargo del día
+                currentPosition = `${dateString}1`;
             }
             updateStatus();
         }
 
-        function updateStatus() {
-            cargoStatus.textContent = `Cargo Actual: ${currentPosition}`;
-        }
+        function updateStatus() { cargoStatus.textContent = `Cargo Actual: ${currentPosition}`; }
 
         cargoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(cargoForm);
-            const newRecord = {
-                nfua: document.getElementById('nfua').value,
-                nombre: document.getElementById('nombre').value,
-                nro_historia: document.getElementById('nro_historia').value,
-                posicion: currentPosition
-            };
-
+            const newRecord = { nfua: document.getElementById('nfua').value, nombre: document.getElementById('nombre').value, nro_historia: document.getElementById('nro_historia').value, posicion: currentPosition };
             const { error } = await supabase.from('cargo').insert(newRecord);
-
-            if (error) {
-                alert(`Error al guardar: ${error.message}`);
-            } else {
-                alert('Registro añadido al cargo actual.');
-                cargoForm.reset();
-            }
+            if (error) { alert(`Error al guardar: ${error.message}`); } 
+            else { alert('Registro añadido al cargo actual.'); cargoForm.reset(); }
         });
 
         generateListBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition);
-            if (error || !data || data.length === 0) {
-                alert('No hay registros en este cargo para generar una lista.');
-                return;
-            }
-
-            let tableHTML = `
-                <style>
-                    body { font-family: sans-serif; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    @media print { body { -webkit-print-color-adjust: exact; } }
-                </style>
-                <h2>Cargo N°: ${currentPosition} - Fecha: ${new Date().toLocaleDateString()}</h2>
-                <table>
-                    <thead><tr><th>N° FUA</th><th>Nombre Completo</th><th>N° Historia</th></tr></thead>
-                    <tbody>
-                        ${data.map(row => `<tr><td>${row.nfua}</td><td>${row.nombre}</td><td>${row.nro_historia}</td></tr>`).join('')}
-                    </tbody>
-                </table>
-            `;
+            if (error || !data || data.length === 0) { alert('No hay registros en este cargo.'); return; }
+            let tableHTML = `<style>body{font-family:sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}@media print{body{-webkit-print-color-adjust:exact}}</style><h2>Cargo N°: ${currentPosition} - Fecha: ${new Date().toLocaleDateString()}</h2><table><thead><tr><th>N° FUA</th><th>Nombre Completo</th><th>N° Historia</th></tr></thead><tbody>${data.map(row => `<tr><td>${row.nfua}</td><td>${row.nombre}</td><td>${row.nro_historia}</td></tr>`).join('')}</tbody></table>`;
             const printWindow = window.open('', '_blank');
             printWindow.document.write(tableHTML);
             printWindow.document.close();
             printWindow.focus();
-            
-            // Preguntar si se cierra el cargo
             setTimeout(() => {
-                if (confirm('Lista generada. ¿Deseas cerrar y archivar este cargo? Al hacerlo, el próximo registro iniciará un nuevo cargo.')) {
+                if (confirm('Lista generada. ¿Deseas cerrar y archivar este cargo?')) {
                     const today = new Date();
                     const dateString = `${today.getDate()}${(today.getMonth() + 1)}${today.getFullYear()}`;
                     const lastIndex = parseInt(currentPosition.slice(dateString.length));
@@ -191,17 +205,8 @@
         manageCargosBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false });
             if (error) { alert('Error al cargar la lista de cargos.'); return; }
-            
             const uniquePositions = [...new Set(data.map(item => item.posicion))];
-            cargoList.innerHTML = uniquePositions.map(pos => `
-                <div class="cargo-item">
-                    <span>Cargo: ${pos}</span>
-                    <div>
-                        <button class="btn btn-primary" onclick="switchToCargo('${pos}')">Añadir</button>
-                        <button class="btn btn-danger" onclick="deleteCargo('${pos}')">Eliminar</button>
-                    </div>
-                </div>
-            `).join('');
+            cargoList.innerHTML = uniquePositions.map(pos => `<div class="cargo-item"><span>Cargo: ${pos}</span><div><button class="btn btn-primary" onclick="switchToCargo('${pos}')">Añadir</button><button class="btn btn-danger" onclick="deleteCargo('${pos}')">Eliminar</button></div></div>`).join('');
             manageCargosModal.style.display = 'flex';
         });
 
@@ -209,27 +214,22 @@
             currentPosition = posicion;
             updateStatus();
             manageCargosModal.style.display = 'none';
-            alert(`Cambiado al Cargo N°: ${posicion}. Ahora puedes añadir más registros.`);
+            alert(`Cambiado al Cargo N°: ${posicion}.`);
         }
 
         async function deleteCargo(posicion) {
-            if (!confirm(`¿Estás seguro de que quieres eliminar TODOS los registros del Cargo N° ${posicion}? Esta acción no se puede deshacer.`)) return;
-            
+            if (!confirm(`¿Estás seguro de que quieres eliminar TODOS los registros del Cargo N° ${posicion}?`)) return;
             const { error } = await supabase.from('cargo').delete().eq('posicion', posicion);
-            if (error) {
-                alert(`Error al eliminar el cargo: ${error.message}`);
-            } else {
-                alert(`Cargo N° ${posicion} eliminado con éxito.`);
+            if (error) { alert(`Error al eliminar: ${error.message}`); } 
+            else {
+                alert(`Cargo N° ${posicion} eliminado.`);
                 manageCargosModal.style.display = 'none';
-                if (currentPosition === posicion) {
-                    initializeCargo(); // Si se borró el cargo actual, inicializa uno nuevo
-                }
+                if (currentPosition === posicion) { initializeCargo(); }
             }
         }
 
         // Iniciar la aplicación
         window.onload = initializeCargo;
-
     </script>
 </body>
 </html>
