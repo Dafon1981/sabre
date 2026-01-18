@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2.1</title>
+    <title>Sabre v2.2 (Final)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Generales (sin cambios ) --- */
@@ -11,7 +11,7 @@
         #main-slider { width: 100%; height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
         .page-container { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; text-align: center; }
         
-        /* --- Estilos de Neuronal (¡Botón corregido!) --- */
+        /* --- Estilos de Neuronal (sin cambios) --- */
         #neuronal-page h1 { margin-bottom: 10px; }
         #neuronal-log { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; width: 90%; max-width: 500px; height: 150px; overflow-y: auto; margin-bottom: 20px; text-align: left; }
         #neuronal-mic-btn { 
@@ -52,12 +52,12 @@
         <!-- Página Neuronal -->
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
-            <p>Mantén presionado para grabar una nota.</p>
+            <p>Presiona el micrófono para grabar una nota.</p>
             <div id="neuronal-log"></div>
             <button id="neuronal-mic-btn">🎤</button>
         </div>
 
-        <!-- Página Cargo -->
+        <!-- Página Cargo (sin cambios) -->
         <div id="cargo-page" class="page-container">
             <div id="cargo-status">Cargo Actual: -</div>
             <form id="cargo-form">
@@ -73,7 +73,7 @@
         </div>
     </div>
 
-    <!-- Modal para Gestionar Cargos -->
+    <!-- Modal para Gestionar Cargos (sin cambios) -->
     <div id="manage-cargos-modal" class="modal">
         <div class="modal-content">
             <h2>Gestor de Cargos</h2>
@@ -88,7 +88,7 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
-        // --- LÓGICA DE NEURONAL (¡RESTAURADA!) ---
+        // --- LÓGICA DE NEURONAL (¡100% CORREGIDA!) ---
         const neuronalMicBtn = document.getElementById('neuronal-mic-btn');
         const neuronalLog = document.getElementById('neuronal-log');
         const NeuronalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -98,7 +98,7 @@
         if (NeuronalSpeechRecognition) {
             neuronalRecognition = new NeuronalSpeechRecognition();
             neuronalRecognition.lang = 'es-ES';
-            neuronalRecognition.continuous = false; // Graba una sola frase
+            neuronalRecognition.continuous = false; // Se detiene solo
 
             neuronalRecognition.onstart = () => {
                 isNeuronalRecording = true;
@@ -111,8 +111,9 @@
                 neuronalLog.innerHTML += `<div>- ${transcript}</div>`;
                 neuronalLog.scrollTop = neuronalLog.scrollHeight;
 
-                // Guardar en Supabase
-                const { error } = await supabase.from('neuronal').insert({ cita: transcript });
+                // ¡CORREGIDO! Usa la columna 'contenido'
+                const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
+                
                 if (error) {
                     neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error al guardar: ${error.message}</div>`;
                 } else {
@@ -132,19 +133,20 @@
             };
         }
 
-        neuronalMicBtn.addEventListener('mousedown', () => {
-            if (NeuronalSpeechRecognition && !isNeuronalRecording) {
+        // ¡CORREGIDO! Lógica de un solo clic para iniciar/detener
+        neuronalMicBtn.addEventListener('click', () => {
+            if (!NeuronalSpeechRecognition) {
+                alert("Tu navegador no soporta el reconocimiento de voz.");
+                return;
+            }
+            if (isNeuronalRecording) {
+                neuronalRecognition.stop(); // Permite detener manualmente si se desea
+            } else {
                 try {
                     neuronalRecognition.start();
                 } catch(e) {
                     alert("No se pudo iniciar el micrófono. Puede que ya esté en uso.");
                 }
-            }
-        });
-
-        neuronalMicBtn.addEventListener('mouseup', () => {
-            if (NeuronalSpeechRecognition && isNeuronalRecording) {
-                neuronalRecognition.stop();
             }
         });
         
