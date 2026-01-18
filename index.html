@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2.6 (Final Definitivo)</title>
+    <title>Sabre v2.7 (Final Pulido)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Generales y de Neuronal (sin cambios ) --- */
@@ -24,6 +24,19 @@
         .input-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #555; background: #333; color: white; font-size: 16px; box-sizing: border-box; }
         #nro_historia_group::before { content: 'E'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
         #nro_historia { padding-left: 28px !important; }
+
+        /* ================================================================== */
+        /* ¡NUEVO! CSS para ocultar los spinners del campo de número          */
+        /* ================================================================== */
+        #nfua::-webkit-outer-spin-button,
+        #nfua::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #nfua {
+            -moz-appearance: textfield; /* Para Firefox */
+        }
+        /* ================================================================== */
 
         .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .btn { padding: 15px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
@@ -46,16 +59,14 @@
 </head>
 <body>
 
+    <!-- HTML (sin cambios) -->
     <div id="main-slider">
-        <!-- Página Neuronal -->
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
             <p>Presiona el micrófono para grabar una nota.</p>
             <div id="neuronal-log"></div>
             <button id="neuronal-mic-btn">🎤</button>
         </div>
-
-        <!-- Página Cargo -->
         <div id="cargo-page" class="page-container">
             <div id="cargo-status">Cargo Actual: -</div>
             <form id="cargo-form">
@@ -77,8 +88,6 @@
             </form>
         </div>
     </div>
-
-    <!-- Modal (sin cambios) -->
     <div id="manage-cargos-modal" class="modal">
         <div class="modal-content">
             <h2>Gestor de Cargos</h2>
@@ -87,15 +96,12 @@
         </div>
     </div>
 
+    <!-- JavaScript (sin cambios) -->
     <script>
-        // --- Configuración ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
-        // ==================================================================
-        // ¡LÓGICA DE NEURONAL RESTAURADA!
-        // ==================================================================
         const neuronalMicBtn = document.getElementById('neuronal-mic-btn');
         const neuronalLog = document.getElementById('neuronal-log');
         const NeuronalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -122,9 +128,7 @@
             if (isNeuronalRecording) { neuronalRecognition.stop(); } 
             else { try { neuronalRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono. Puede que ya esté en uso."); } }
         });
-        // ==================================================================
 
-        // --- LÓGICA DE CARGO (CON VALIDACIÓN) ---
         const cargoForm = document.getElementById('cargo-form');
         const cargoStatus = document.getElementById('cargo-status');
         const manageCargosBtn = document.getElementById('manage-cargos-btn');
@@ -134,10 +138,7 @@
         const forceNewCargoBtn = document.getElementById('force-new-cargo-btn');
         let currentPosition = null;
 
-        function formatNfua(value) {
-            return value.toString().padStart(7, '0');
-        }
-
+        function formatNfua(value) { return value.toString().padStart(7, '0'); }
         function formatNroHistoria(value) {
             let cleanValue = value.toUpperCase().replace('E', '');
             if (cleanValue.length === 9) { return 'E' + cleanValue; }
@@ -156,19 +157,10 @@
             const rawNroHistoria = document.getElementById('nro_historia').value;
             const formattedNfua = formatNfua(rawNfua);
             const formattedNroHistoria = formatNroHistoria(rawNroHistoria);
-            const newRecord = {
-                nfua: formattedNfua,
-                nombre: document.getElementById('nombre').value,
-                nro_historia: formattedNroHistoria,
-                posicion: currentPosition
-            };
+            const newRecord = { nfua: formattedNfua, nombre: document.getElementById('nombre').value, nro_historia: formattedNroHistoria, posicion: currentPosition };
             const { error } = await supabase.from('cargo').insert(newRecord);
-            if (error) {
-                alert(`Error al guardar: ${error.message}`);
-            } else {
-                alert(`Registro añadido al cargo actual.\nFUA: ${formattedNfua}\nHistoria: ${formattedNroHistoria}`);
-                cargoForm.reset();
-            }
+            if (error) { alert(`Error al guardar: ${error.message}`); } 
+            else { alert(`Registro añadido al cargo actual.\nFUA: ${formattedNfua}\nHistoria: ${formattedNroHistoria}`); cargoForm.reset(); }
         });
 
         async function getNextPosition() {
@@ -246,7 +238,6 @@
             else { alert('Registros eliminados con éxito.'); toggleCargoDetails(posicion); }
         }
 
-        // Iniciar la aplicación
         window.onload = initializeCargo;
     </script>
 </body>
