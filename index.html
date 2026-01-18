@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2.5 (Validación)</title>
+    <title>Sabre v2.6 (Final Definitivo)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Generales y de Neuronal (sin cambios ) --- */
@@ -22,17 +22,8 @@
         #cargo-form { width: 100%; max-width: 400px; }
         .input-group { margin-bottom: 15px; position: relative; }
         .input-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #555; background: #333; color: white; font-size: 16px; box-sizing: border-box; }
-        /* ¡NUEVO! Estilo para la 'E' fija en Nro. Historia */
-        #nro_historia_group::before {
-            content: 'E';
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #aaa;
-            pointer-events: none; /* Permite hacer clic a través de la 'E' */
-        }
-        #nro_historia { padding-left: 28px !important; /* Deja espacio para la 'E' */ }
+        #nro_historia_group::before { content: 'E'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
+        #nro_historia { padding-left: 28px !important; }
 
         .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .btn { padding: 15px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
@@ -56,7 +47,7 @@
 <body>
 
     <div id="main-slider">
-        <!-- Página Neuronal (sin cambios) -->
+        <!-- Página Neuronal -->
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
             <p>Presiona el micrófono para grabar una nota.</p>
@@ -97,66 +88,80 @@
     </div>
 
     <script>
-        // --- Configuración y Lógica Neuronal (sin cambios) ---
+        // --- Configuración ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
-        // ... (código de Neuronal sin cambios)
 
-        // --- LÓGICA DE CARGO (¡CON VALIDACIÓN!) ---
+        // ==================================================================
+        // ¡LÓGICA DE NEURONAL RESTAURADA!
+        // ==================================================================
+        const neuronalMicBtn = document.getElementById('neuronal-mic-btn');
+        const neuronalLog = document.getElementById('neuronal-log');
+        const NeuronalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let neuronalRecognition;
+        let isNeuronalRecording = false;
+        if (NeuronalSpeechRecognition) {
+            neuronalRecognition = new NeuronalSpeechRecognition();
+            neuronalRecognition.lang = 'es-ES';
+            neuronalRecognition.continuous = false;
+            neuronalRecognition.onstart = () => { isNeuronalRecording = true; neuronalMicBtn.classList.add('recording'); neuronalMicBtn.textContent = '...'; };
+            neuronalRecognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                neuronalLog.innerHTML += `<div>- ${transcript}</div>`;
+                neuronalLog.scrollTop = neuronalLog.scrollHeight;
+                const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
+                if (error) { neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error: ${error.message}</div>`; } 
+                else { neuronalLog.innerHTML += `<div style="color: #a5d6a7;">Guardado ✓</div>`; }
+            };
+            neuronalRecognition.onend = () => { isNeuronalRecording = false; neuronalMicBtn.classList.remove('recording'); neuronalMicBtn.textContent = '🎤'; };
+            neuronalRecognition.onerror = (event) => { console.error('Error en Neuronal:', event.error); neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error: ${event.error}</div>`; };
+        }
+        neuronalMicBtn.addEventListener('click', () => {
+            if (!NeuronalSpeechRecognition) { alert("Tu navegador no soporta el reconocimiento de voz."); return; }
+            if (isNeuronalRecording) { neuronalRecognition.stop(); } 
+            else { try { neuronalRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono. Puede que ya esté en uso."); } }
+        });
+        // ==================================================================
+
+        // --- LÓGICA DE CARGO (CON VALIDACIÓN) ---
         const cargoForm = document.getElementById('cargo-form');
         const cargoStatus = document.getElementById('cargo-status');
-        // ... (resto de elementos del DOM sin cambios)
+        const manageCargosBtn = document.getElementById('manage-cargos-btn');
+        const manageCargosModal = document.getElementById('manage-cargos-modal');
+        const cargoListContainer = document.getElementById('cargo-list-container');
+        const generateListBtn = document.getElementById('generate-list-btn');
+        const forceNewCargoBtn = document.getElementById('force-new-cargo-btn');
         let currentPosition = null;
 
-        // ==================================================================
-        // ¡NUEVAS FUNCIONES DE VALIDACIÓN!
-        // ==================================================================
         function formatNfua(value) {
             return value.toString().padStart(7, '0');
         }
 
         function formatNroHistoria(value) {
-            // Limpiar la 'E' si el usuario la escribió
             let cleanValue = value.toUpperCase().replace('E', '');
-            
-            // Caso 1: El usuario pegó el número completo (ej: 260004981)
-            if (cleanValue.length === 9) {
-                return 'E' + cleanValue;
-            }
-            
-            // Caso 2: El usuario usó el formato corto (ej: 264981)
+            if (cleanValue.length === 9) { return 'E' + cleanValue; }
             if (cleanValue.length > 2 && cleanValue.length <= 8) {
                 const year = cleanValue.substring(0, 2);
                 const correlativo = cleanValue.substring(2);
-                // Rellenar el correlativo con ceros hasta tener 7 dígitos
                 const paddedCorrelativo = correlativo.padStart(7, '0');
                 return `E${year}${paddedCorrelativo}`;
             }
-
-            // Si el formato es inesperado, devolverlo con la 'E' para revisión
             return 'E' + cleanValue;
         }
-        // ==================================================================
 
         cargoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Obtener valores de los inputs
             const rawNfua = document.getElementById('nfua').value;
             const rawNroHistoria = document.getElementById('nro_historia').value;
-
-            // ¡APLICAR VALIDACIÓN ANTES DE GUARDAR!
             const formattedNfua = formatNfua(rawNfua);
             const formattedNroHistoria = formatNroHistoria(rawNroHistoria);
-
             const newRecord = {
                 nfua: formattedNfua,
                 nombre: document.getElementById('nombre').value,
                 nro_historia: formattedNroHistoria,
                 posicion: currentPosition
             };
-
             const { error } = await supabase.from('cargo').insert(newRecord);
             if (error) {
                 alert(`Error al guardar: ${error.message}`);
@@ -166,25 +171,6 @@
             }
         });
 
-        // ... (resto del código de Cargo: initializeCargo, generateListBtn, manageCargosBtn, etc., sin cambios)
-        
-        // --- INICIALIZACIÓN Y FUNCIONES RESTANTES (SIN CAMBIOS) ---
-        const forceNewCargoBtn = document.getElementById('force-new-cargo-btn');
-        const generateListBtn = document.getElementById('generate-list-btn');
-        const manageCargosBtn = document.getElementById('manage-cargos-btn');
-        
-        async function getNextPosition() { /* ... sin cambios ... */ return '...'; }
-        async function initializeCargo() { /* ... sin cambios ... */ }
-        function updateStatus() { /* ... sin cambios ... */ }
-        forceNewCargoBtn.addEventListener('click', async () => { /* ... sin cambios ... */ });
-        generateListBtn.addEventListener('click', async () => { /* ... sin cambios ... */ });
-        manageCargosBtn.addEventListener('click', async () => { /* ... sin cambios ... */ });
-        async function toggleCargoDetails(posicion) { /* ... sin cambios ... */ }
-        function switchToCargo(posicion) { /* ... sin cambios ... */ }
-        async function deleteSelected(posicion) { /* ... sin cambios ... */ }
-        window.onload = initializeCargo;
-
-        // --- Código completo de las funciones no modificadas para referencia ---
         async function getNextPosition() {
             const today = new Date();
             const dateString = `${today.getDate()}${(today.getMonth() + 1)}${today.getFullYear()}`;
@@ -196,6 +182,7 @@
             }
             return `${dateString}1`;
         }
+
         async function initializeCargo() {
             const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false }).limit(1);
             if (error) { alert("Error de conexión al inicializar."); return; }
@@ -203,7 +190,9 @@
             else { currentPosition = await getNextPosition(); }
             updateStatus();
         }
+
         function updateStatus() { cargoStatus.textContent = `Cargo Actual: ${currentPosition}`; }
+
         forceNewCargoBtn.addEventListener('click', async () => {
             if (confirm('¿Estás seguro de que quieres forzar la creación de un nuevo cargo?')) {
                 currentPosition = await getNextPosition();
@@ -211,6 +200,7 @@
                 alert(`Listo para registrar en el Nuevo Cargo N°: ${currentPosition}`);
             }
         });
+
         generateListBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
             if (error || !data || data.length === 0) { alert('No hay registros en el cargo actual para generar una lista.'); return; }
@@ -220,13 +210,15 @@
             printWindow.document.close();
             printWindow.focus();
         });
+
         manageCargosBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false });
             if (error) { alert('Error al cargar la lista de cargos.'); return; }
             const uniquePositions = [...new Set(data.map(item => item.posicion))];
-            document.getElementById('cargo-list-container').innerHTML = uniquePositions.map(pos => `<div class="cargo-item"><div class="cargo-item-header" onclick="toggleCargoDetails('${pos}')">Cargo: ${pos}</div><div id="content-${pos}" class="cargo-item-content">Cargando...</div></div>`).join('');
-            document.getElementById('manage-cargos-modal').style.display = 'flex';
+            cargoListContainer.innerHTML = uniquePositions.map(pos => `<div class="cargo-item"><div class="cargo-item-header" onclick="toggleCargoDetails('${pos}')">Cargo: ${pos}</div><div id="content-${pos}" class="cargo-item-content">Cargando...</div></div>`).join('');
+            manageCargosModal.style.display = 'flex';
         });
+
         async function toggleCargoDetails(posicion) {
             const contentDiv = document.getElementById(`content-${posicion}`);
             if (contentDiv.style.display === 'block') { contentDiv.style.display = 'none'; return; }
@@ -235,12 +227,14 @@
             if (error) { contentDiv.innerHTML = 'Error al cargar registros.'; return; }
             contentDiv.innerHTML = `<table>${data.map(row => `<tr><td><input type="checkbox" class="record-checkbox" value="${row.id}"></td><td>${row.nombre}</td><td>${row.nfua}</td></tr>`).join('')}</table><div class="record-actions"><button class="btn btn-danger" onclick="deleteSelected('${posicion}')">Eliminar Seleccionados</button><button class="btn btn-primary" onclick="switchToCargo('${posicion}')">Añadir a este Cargo</button></div>`;
         }
+
         function switchToCargo(posicion) {
             currentPosition = posicion;
             updateStatus();
-            document.getElementById('manage-cargos-modal').style.display = 'none';
+            manageCargosModal.style.display = 'none';
             alert(`Cambiado al Cargo N°: ${posicion}.`);
         }
+
         async function deleteSelected(posicion) {
             const contentDiv = document.getElementById(`content-${posicion}`);
             const checkboxes = contentDiv.querySelectorAll('.record-checkbox:checked');
@@ -251,6 +245,9 @@
             if (error) { alert(`Error al eliminar: ${error.message}`); } 
             else { alert('Registros eliminados con éxito.'); toggleCargoDetails(posicion); }
         }
+
+        // Iniciar la aplicación
+        window.onload = initializeCargo;
     </script>
 </body>
 </html>
