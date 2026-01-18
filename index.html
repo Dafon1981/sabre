@@ -3,22 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v2.9 (Diseño Mejorado)</title>
+    <title>Sabre v3.0 (Exportación)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
-        /* --- Estilos Generales (sin cambios ) --- */
+        /* --- Estilos (sin cambios ) --- */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: white; }
         #main-slider { width: 100%; height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
         .page-container { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; text-align: center; }
-        
-        /* --- Estilos de Neuronal (sin cambios) --- */
         #neuronal-page h1 { margin-bottom: 10px; }
         #neuronal-log { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; width: 90%; max-width: 500px; height: 150px; overflow-y: auto; margin-bottom: 20px; text-align: left; }
         #neuronal-mic-btn { background-color: #007bff; color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 36px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: transform 0.2s, background-color 0.2s; }
         #neuronal-mic-btn.recording { background-color: #dc3545; transform: scale(1.1); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.7); } 70% { box-shadow: 0 0 0 20px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
-
-        /* --- Estilos de Cargo (con botones mejorados) --- */
         #cargo-page { justify-content: flex-start; padding-top: 60px; }
         #cargo-status { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #007bff; padding: 5px 15px; border-radius: 15px; font-weight: bold; }
         #cargo-form { width: 100%; max-width: 400px; }
@@ -28,26 +24,12 @@
         #nro_historia { padding-left: 28px !important; }
         #nfua::-webkit-outer-spin-button, #nfua::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         #nfua { -moz-appearance: textfield; }
-
-        /* ================================================================== */
-        /* ¡CSS DE BOTONES MEJORADO!                                          */
-        /* ================================================================== */
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px; /* Espacio uniforme entre botones */
-            margin-top: 25px;
-            width: 100%; /* Asegura que todos los botones tengan el mismo ancho */
-        }
-        /* ================================================================== */
-
+        .action-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 25px; width: 100%; }
         .btn { padding: 15px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
         .btn-primary { background-color: #28a745; color: white; }
         .btn-secondary { background-color: #6c757d; color: white; }
         .btn-info { background-color: #17a2b8; color: white; }
         .btn-warning { background-color: #ffc107; color: black; }
-        
-        /* --- Estilos del Modal (sin cambios) --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { background: #2a2a2a; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; display: flex; flex-direction: column; }
         #cargo-list-container { max-height: 70vh; overflow-y: auto; }
@@ -83,7 +65,7 @@
                 </div>
                 <div class="action-buttons">
                     <button type="submit" class="btn btn-primary">Añadir Registro al Cargo</button>
-                    <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Imprimir</button>
+                    <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Imprimir/Exportar</button>
                     <button type="button" id="manage-cargos-btn" class="btn btn-secondary">Ver/Gestionar Cargos</button>
                     <button type="button" id="force-new-cargo-btn" class="btn btn-warning">Forzar Nuevo Cargo</button>
                 </div>
@@ -98,12 +80,125 @@
         </div>
     </div>
 
-    <!-- JavaScript (sin cambios) -->
     <script>
+        // --- JavaScript (con la función de generar lista actualizada) ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
+        // ... (Lógica de Neuronal sin cambios) ...
+
+        const cargoForm = document.getElementById('cargo-form');
+        const generateListBtn = document.getElementById('generate-list-btn');
+        let currentPosition = null;
+
+        // ==================================================================
+        // ¡FUNCIÓN DE GENERAR LISTA ACTUALIZADA CON EXPORTACIÓN!
+        // ==================================================================
+        generateListBtn.addEventListener('click', async () => {
+            const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
+            if (error || !data || data.length === 0) {
+                alert('No hay registros en el cargo actual para generar una lista.');
+                return;
+            }
+
+            let tableRows = data.map(row => `
+                <tr>
+                    <td>${row.nfua || ''}</td>
+                    <td>${row.nombre || ''}</td>
+                    <td>${row.nro_historia || ''}</td>
+                </tr>
+            `).join('');
+
+            let reportHTML = `
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <title>Cargo N° ${currentPosition}</title>
+                    <!-- ¡NUEVO! Librerías para exportar -->
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+                    <style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background-color: #f0f0f0; }
+                        #report-container { background-color: white; padding: 20px; border: 1px solid #ccc; max-width: 800px; margin: auto; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        h2 { text-align: center; }
+                        .action-bar { text-align: center; margin-top: 20px; padding: 10px; background-color: #e9ecef; border-radius: 8px; }
+                        .action-bar button { padding: 10px 15px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+                        @media print {
+                            body { margin: 0; background-color: white; }
+                            .action-bar { display: none; }
+                            #report-container { border: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="report-container">
+                        <h2>Cargo N°: ${currentPosition} - Fecha: ${new Date( ).toLocaleDateString()}</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>N° FUA</th>
+                                    <th>Nombre Completo</th>
+                                    <th>N° Historia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="action-bar">
+                        <button id="download-pdf">Descargar PDF</button>
+                        <button id="download-jpg">Descargar JPG</button>
+                        <button onclick="window.print()">Imprimir</button>
+                    </div>
+
+                    <!-- ¡NUEVO! Script para manejar la descarga -->
+                    <script>
+                        const { jsPDF } = window.jspdf;
+                        const reportElement = document.getElementById('report-container');
+                        const fileName = 'Cargo-${currentPosition}';
+
+                        document.getElementById('download-pdf').addEventListener('click', () => {
+                            html2canvas(reportElement, { scale: 2 }).then(canvas => {
+                                const imgData = canvas.toDataURL('image/png');
+                                const pdf = new jsPDF('p', 'mm', 'a4');
+                                const pdfWidth = pdf.internal.pageSize.getWidth();
+                                const pdfHeight = pdf.internal.pageSize.getHeight();
+                                const canvasWidth = canvas.width;
+                                const canvasHeight = canvas.height;
+                                const ratio = canvasWidth / canvasHeight;
+                                const width = pdfWidth - 20; // Ancho con márgenes
+                                const height = width / ratio;
+                                
+                                pdf.addImage(imgData, 'PNG', 10, 10, width, height);
+                                pdf.save(fileName + '.pdf');
+                            });
+                        });
+
+                        document.getElementById('download-jpg').addEventListener('click', () => {
+                            html2canvas(reportElement, { scale: 2 }).then(canvas => {
+                                const link = document.createElement('a');
+                                link.href = canvas.toDataURL('image/jpeg');
+                                link.download = fileName + '.jpg';
+                                link.click();
+                            });
+                        });
+                    <\/script>
+                </body>
+                </html>
+            `;
+            
+            const reportWindow = window.open('', '_blank');
+            reportWindow.document.write(reportHTML);
+            reportWindow.document.close();
+        });
+        // ==================================================================
+
+        // ... (Resto del código de Cargo y Neuronal sin cambios) ...
         const neuronalMicBtn = document.getElementById('neuronal-mic-btn');
         const neuronalLog = document.getElementById('neuronal-log');
         const NeuronalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -130,16 +225,11 @@
             if (isNeuronalRecording) { neuronalRecognition.stop(); } 
             else { try { neuronalRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono. Puede que ya esté en uso."); } }
         });
-
-        const cargoForm = document.getElementById('cargo-form');
         const cargoStatus = document.getElementById('cargo-status');
         const manageCargosBtn = document.getElementById('manage-cargos-btn');
         const manageCargosModal = document.getElementById('manage-cargos-modal');
         const cargoListContainer = document.getElementById('cargo-list-container');
-        const generateListBtn = document.getElementById('generate-list-btn');
         const forceNewCargoBtn = document.getElementById('force-new-cargo-btn');
-        let currentPosition = null;
-
         function formatNfua(value) { return value.toString().padStart(7, '0'); }
         function formatNroHistoria(value) {
             let cleanValue = value.replace(/[^0-9]/g, '');
@@ -152,7 +242,6 @@
             }
             return 'E' + cleanValue;
         }
-
         cargoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const rawNfua = document.getElementById('nfua').value;
@@ -164,7 +253,6 @@
             if (error) { alert(`Error al guardar: ${error.message}`); } 
             else { alert(`Registro añadido al cargo actual.\nFUA: ${formattedNfua}\nHistoria: ${formattedNroHistoria}`); cargoForm.reset(); }
         });
-
         async function getNextPosition() {
             const today = new Date();
             const dateString = `${today.getDate()}${(today.getMonth() + 1)}${today.getFullYear()}`;
@@ -176,7 +264,6 @@
             }
             return `${dateString}1`;
         }
-
         async function initializeCargo() {
             const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false }).limit(1);
             if (error) { alert("Error de conexión al inicializar."); return; }
@@ -184,9 +271,7 @@
             else { currentPosition = await getNextPosition(); }
             updateStatus();
         }
-
         function updateStatus() { cargoStatus.textContent = `Cargo Actual: ${currentPosition}`; }
-
         forceNewCargoBtn.addEventListener('click', async () => {
             if (confirm('¿Estás seguro de que quieres forzar la creación de un nuevo cargo?')) {
                 currentPosition = await getNextPosition();
@@ -194,17 +279,6 @@
                 alert(`Listo para registrar en el Nuevo Cargo N°: ${currentPosition}`);
             }
         });
-
-        generateListBtn.addEventListener('click', async () => {
-            const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
-            if (error || !data || data.length === 0) { alert('No hay registros en el cargo actual para generar una lista.'); return; }
-            let tableHTML = `<!DOCTYPE html><html lang="es"><head><title>Cargo N° ${currentPosition}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:10px;text-align:left}th{background-color:#f2f2f2}h2{text-align:center}@media print{body{margin:0;-webkit-print-color-adjust:exact}.no-print{display:none}}</style></head><body><h2>Cargo N°: ${currentPosition} - Fecha: ${new Date().toLocaleDateString()}</h2><table><thead><tr><th>N° FUA</th><th>Nombre Completo</th><th>N° Historia</th></tr></thead><tbody>${data.map(row => `<tr><td>${row.nfua||''}</td><td>${row.nombre||''}</td><td>${row.nro_historia||''}</td></tr>`).join('')}</tbody></table></body></html>`;
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(tableHTML);
-            printWindow.document.close();
-            printWindow.focus();
-        });
-
         manageCargosBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('posicion').order('created_at', { ascending: false });
             if (error) { alert('Error al cargar la lista de cargos.'); return; }
@@ -212,7 +286,6 @@
             cargoListContainer.innerHTML = uniquePositions.map(pos => `<div class="cargo-item"><div class="cargo-item-header" onclick="toggleCargoDetails('${pos}')">Cargo: ${pos}</div><div id="content-${pos}" class="cargo-item-content">Cargando...</div></div>`).join('');
             manageCargosModal.style.display = 'flex';
         });
-
         async function toggleCargoDetails(posicion) {
             const contentDiv = document.getElementById(`content-${posicion}`);
             if (contentDiv.style.display === 'block') { contentDiv.style.display = 'none'; return; }
@@ -221,14 +294,12 @@
             if (error) { contentDiv.innerHTML = 'Error al cargar registros.'; return; }
             contentDiv.innerHTML = `<table>${data.map(row => `<tr><td><input type="checkbox" class="record-checkbox" value="${row.id}"></td><td>${row.nombre}</td><td>${row.nfua}</td></tr>`).join('')}</table><div class="record-actions"><button class="btn btn-danger" onclick="deleteSelected('${posicion}')">Eliminar Seleccionados</button><button class="btn btn-primary" onclick="switchToCargo('${posicion}')">Añadir a este Cargo</button></div>`;
         }
-
         function switchToCargo(posicion) {
             currentPosition = posicion;
             updateStatus();
             manageCargosModal.style.display = 'none';
             alert(`Cambiado al Cargo N°: ${posicion}.`);
         }
-
         async function deleteSelected(posicion) {
             const contentDiv = document.getElementById(`content-${posicion}`);
             const checkboxes = contentDiv.querySelectorAll('.record-checkbox:checked');
@@ -239,7 +310,6 @@
             if (error) { alert(`Error al eliminar: ${error.message}`); } 
             else { alert('Registros eliminados con éxito.'); toggleCargoDetails(posicion); }
         }
-
         window.onload = initializeCargo;
     </script>
 </body>
