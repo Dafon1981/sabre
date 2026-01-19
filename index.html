@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v3.1 (Responsivo)</title>
+    <title>Sabre v3.2 (Compartir)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos (sin cambios ) --- */
@@ -65,7 +65,7 @@
                 </div>
                 <div class="action-buttons">
                     <button type="submit" class="btn btn-primary">Añadir Registro al Cargo</button>
-                    <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Imprimir/Exportar</button>
+                    <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Exportar</button>
                     <button type="button" id="manage-cargos-btn" class="btn btn-secondary">Ver/Gestionar Cargos</button>
                     <button type="button" id="force-new-cargo-btn" class="btn btn-warning">Forzar Nuevo Cargo</button>
                 </div>
@@ -86,13 +86,11 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
-        // ... (Lógica de Neuronal sin cambios) ...
-
         const generateListBtn = document.getElementById('generate-list-btn');
         let currentPosition = null;
 
         // ==================================================================
-        // ¡FUNCIÓN DE GENERAR LISTA CON META VIEWPORT!
+        // ¡FUNCIÓN DE GENERAR LISTA CON BOTÓN DE COMPARTIR!
         // ==================================================================
         generateListBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
@@ -101,20 +99,13 @@
                 return;
             }
 
-            let tableRows = data.map(row => `
-                <tr>
-                    <td>${row.nfua || ''}</td>
-                    <td>${row.nombre || ''}</td>
-                    <td>${row.nro_historia || ''}</td>
-                </tr>
-            `).join('');
+            let tableRows = data.map(row => `<tr><td>${row.nfua||''}</td><td>${row.nombre||''}</td><td>${row.nro_historia||''}</td></tr>`).join('');
 
             let reportHTML = `
                 <!DOCTYPE html>
                 <html lang="es">
                 <head>
                     <meta charset="UTF-8">
-                    <!-- ¡NUEVO Y CRUCIAL! Etiqueta para diseño responsivo -->
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Cargo N° ${currentPosition}</title>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
@@ -128,38 +119,60 @@
                         h2 { text-align: center; font-size: 18px; }
                         .action-bar { text-align: center; margin-top: 20px; padding: 10px; }
                         .action-bar button { padding: 12px 18px; margin: 5px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background-color: #007bff; color: white; }
-                        @media print {
-                            body { margin: 0; padding: 0; background-color: white; }
-                            .action-bar { display: none; }
-                            #report-container { border: none; max-width: 100%; }
-                        }
+                        #share-btn { background-color: #25D366; } /* Color tipo WhatsApp */
+                        @media print { .action-bar { display: none; } }
                     </style>
                 </head>
                 <body>
                     <div id="report-container">
                         <h2>Cargo N°: ${currentPosition} - Fecha: ${new Date( ).toLocaleDateString()}</h2>
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>N° FUA</th>
-                                    <th>Nombre Completo</th>
-                                    <th>N° Historia</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tableRows}
-                            </tbody>
+                            <thead><tr><th>N° FUA</th><th>Nombre Completo</th><th>N° Historia</th></tr></thead>
+                            <tbody>${tableRows}</tbody>
                         </table>
                     </div>
                     <div class="action-bar">
                         <button id="download-pdf">Descargar PDF</button>
                         <button id="download-jpg">Descargar JPG</button>
-                        <button onclick="window.print()">Imprimir</button>
+                        <button id="share-btn">Compartir</button> <!-- ¡NUEVO BOTÓN! -->
                     </div>
                     <script>
                         const { jsPDF } = window.jspdf;
                         const reportElement = document.getElementById('report-container');
                         const fileName = 'Cargo-${currentPosition}';
+
+                        document.getElementById('download-pdf').addEventListener('click', () => { /* ... sin cambios ... */ });
+                        document.getElementById('download-jpg').addEventListener('click', () => { /* ... sin cambios ... */ });
+
+                        // ¡NUEVA LÓGICA PARA COMPARTIR!
+                        document.getElementById('share-btn').addEventListener('click', async () => {
+                            if (!navigator.share) {
+                                alert('Tu navegador no soporta la función de compartir.');
+                                return;
+                            }
+
+                            try {
+                                const canvas = await html2canvas(reportElement, { scale: 2 });
+                                canvas.toBlob(async (blob) => {
+                                    const file = new File([blob], fileName + '.jpg', { type: 'image/jpeg' });
+                                    const shareData = {
+                                        files: [file],
+                                        title: 'Reporte de Cargo',
+                                        text: 'Reporte del Cargo N° ${currentPosition}',
+                                    };
+                                    if (navigator.canShare(shareData)) {
+                                        await navigator.share(shareData);
+                                    } else {
+                                        alert("No se puede compartir este tipo de archivo.");
+                                    }
+                                }, 'image/jpeg');
+                            } catch (err) {
+                                console.error("Error al compartir: ", err);
+                                alert("Ocurrió un error al intentar compartir la imagen.");
+                            }
+                        });
+
+                        // Lógica de descarga sin cambios
                         document.getElementById('download-pdf').addEventListener('click', () => {
                             html2canvas(reportElement, { scale: 2 }).then(canvas => {
                                 const imgData = canvas.toDataURL('image/png');
