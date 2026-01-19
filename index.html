@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v3.0 (Exportación)</title>
+    <title>Sabre v3.1 (Responsivo)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos (sin cambios ) --- */
@@ -88,12 +88,11 @@
 
         // ... (Lógica de Neuronal sin cambios) ...
 
-        const cargoForm = document.getElementById('cargo-form');
         const generateListBtn = document.getElementById('generate-list-btn');
         let currentPosition = null;
 
         // ==================================================================
-        // ¡FUNCIÓN DE GENERAR LISTA ACTUALIZADA CON EXPORTACIÓN!
+        // ¡FUNCIÓN DE GENERAR LISTA CON META VIEWPORT!
         // ==================================================================
         generateListBtn.addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
@@ -114,23 +113,25 @@
                 <!DOCTYPE html>
                 <html lang="es">
                 <head>
+                    <meta charset="UTF-8">
+                    <!-- ¡NUEVO Y CRUCIAL! Etiqueta para diseño responsivo -->
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Cargo N° ${currentPosition}</title>
-                    <!-- ¡NUEVO! Librerías para exportar -->
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
                     <style>
-                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background-color: #f0f0f0; }
-                        #report-container { background-color: white; padding: 20px; border: 1px solid #ccc; max-width: 800px; margin: auto; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f0f0f0; }
+                        #report-container { background-color: white; padding: 15px; border: 1px solid #ccc; width: 100%; max-width: 800px; margin: auto; box-sizing: border-box; }
+                        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; word-break: break-word; }
                         th { background-color: #f2f2f2; }
-                        h2 { text-align: center; }
-                        .action-bar { text-align: center; margin-top: 20px; padding: 10px; background-color: #e9ecef; border-radius: 8px; }
-                        .action-bar button { padding: 10px 15px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+                        h2 { text-align: center; font-size: 18px; }
+                        .action-bar { text-align: center; margin-top: 20px; padding: 10px; }
+                        .action-bar button { padding: 12px 18px; margin: 5px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background-color: #007bff; color: white; }
                         @media print {
-                            body { margin: 0; background-color: white; }
+                            body { margin: 0; padding: 0; background-color: white; }
                             .action-bar { display: none; }
-                            #report-container { border: none; }
+                            #report-container { border: none; max-width: 100%; }
                         }
                     </style>
                 </head>
@@ -155,30 +156,24 @@
                         <button id="download-jpg">Descargar JPG</button>
                         <button onclick="window.print()">Imprimir</button>
                     </div>
-
-                    <!-- ¡NUEVO! Script para manejar la descarga -->
                     <script>
                         const { jsPDF } = window.jspdf;
                         const reportElement = document.getElementById('report-container');
                         const fileName = 'Cargo-${currentPosition}';
-
                         document.getElementById('download-pdf').addEventListener('click', () => {
                             html2canvas(reportElement, { scale: 2 }).then(canvas => {
                                 const imgData = canvas.toDataURL('image/png');
                                 const pdf = new jsPDF('p', 'mm', 'a4');
                                 const pdfWidth = pdf.internal.pageSize.getWidth();
-                                const pdfHeight = pdf.internal.pageSize.getHeight();
                                 const canvasWidth = canvas.width;
                                 const canvasHeight = canvas.height;
                                 const ratio = canvasWidth / canvasHeight;
-                                const width = pdfWidth - 20; // Ancho con márgenes
+                                const width = pdfWidth - 20;
                                 const height = width / ratio;
-                                
                                 pdf.addImage(imgData, 'PNG', 10, 10, width, height);
                                 pdf.save(fileName + '.pdf');
                             });
                         });
-
                         document.getElementById('download-jpg').addEventListener('click', () => {
                             html2canvas(reportElement, { scale: 2 }).then(canvas => {
                                 const link = document.createElement('a');
@@ -225,6 +220,7 @@
             if (isNeuronalRecording) { neuronalRecognition.stop(); } 
             else { try { neuronalRecognition.start(); } catch(e) { alert("No se pudo iniciar el micrófono. Puede que ya esté en uso."); } }
         });
+        const cargoForm = document.getElementById('cargo-form');
         const cargoStatus = document.getElementById('cargo-status');
         const manageCargosBtn = document.getElementById('manage-cargos-btn');
         const manageCargosModal = document.getElementById('manage-cargos-modal');
