@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v4.1 (Firma Corregido)</title>
+    <title>Sabre v4.2 (Botones Corregidos)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos de la App Principal (sin cambios ) --- */
@@ -80,10 +80,11 @@
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
         // ==================================================================
-        // ¡NUEVA LÓGICA DE FIRMAS AÑADIDA AQUÍ!
+        // LÓGICA DE GENERAR LISTA (CORREGIDA)
         // ==================================================================
         const generateListBtn = document.getElementById('generate-list-btn');
         generateListBtn.addEventListener('click', async () => {
+            if (!currentPosition) { alert('No hay un cargo activo.'); return; }
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
             if (error || !data || data.length === 0) {
                 alert('No hay registros en el cargo actual para generar una lista.');
@@ -158,7 +159,8 @@
                         const signatureSlider = document.getElementById('signature-slider');
                         const padEntrega = new SignaturePad(document.getElementById('pad-entrega'));
                         const padRecepcion = new SignaturePad(document.getElementById('pad-recepcion'));
-                        
+                        const cargoId = '${currentPosition}'; // ¡CORRECCIÓN CLAVE!
+
                         signBtn.addEventListener('click', () => signatureModal.style.display = 'flex');
                         document.getElementById('close-modal-btn').addEventListener('click', () => signatureModal.style.display = 'none');
                         document.getElementById('next-page-btn').addEventListener('click', () => signatureSlider.style.transform = 'translateX(-50%)');
@@ -172,23 +174,22 @@
                         document.getElementById('finish-sign-btn').addEventListener('click', async () => {
                             const firmaEntregaData = !padEntrega.isEmpty() ? padEntrega.toDataURL('image/png') : null;
                             const firmaRecepcionData = !padRecepcion.isEmpty() ? padRecepcion.toDataURL('image/png') : null;
-                            let entregaUrl = null, recepcionUrl = null;
                             
                             async function uploadSignature(data, bucketName, type) {
                                 if (!data) return null;
                                 const blob = dataURLToBlob(data);
-                                const filePath = \`public/\${type}_${currentPosition}_\${Date.now()}.png\`;
+                                const filePath = \`public/\${type}_\${cargoId}_\${Date.now()}.png\`;
                                 const { error } = await supabase_report.storage.from(bucketName).upload(filePath, blob);
                                 if (error) throw new Error(\`Error subiendo firma de \${type}: \${error.message}\`);
                                 return supabase_report.storage.from(bucketName).getPublicUrl(filePath).data.publicUrl;
                             }
 
                             try {
-                                entregaUrl = await uploadSignature(firmaEntregaData, 'firmas_entrega', 'entrega');
-                                recepcionUrl = await uploadSignature(firmaRecepcionData, 'firmas_recepcion', 'recepcion');
+                                const entregaUrl = await uploadSignature(firmaEntregaData, 'firmas_entrega', 'entrega');
+                                const recepcionUrl = await uploadSignature(firmaRecepcionData, 'firmas_recepcion', 'recepcion');
 
                                 const { error: upsertError } = await supabase_report.from('cargos_firmados').upsert({
-                                    posicion_cargo: '${currentPosition}', firma_entrega_url: entregaUrl, firma_recepcion_url: recepcionUrl, updated_at: new Date()
+                                    posicion_cargo: cargoId, firma_entrega_url: entregaUrl, firma_recepcion_url: recepcionUrl, updated_at: new Date()
                                 }, { onConflict: 'posicion_cargo' });
                                 if (upsertError) throw new Error(\`Error guardando firmas: \${upsertError.message}\`);
                                 
@@ -199,11 +200,11 @@
                         });
 
                         async function loadSignatures() {
-                            const { data, error } = await supabase_report.from('cargos_firmados').select('*').eq('posicion_cargo', '${currentPosition}').single();
+                            const { data, error } = await supabase_report.from('cargos_firmados').select('*').eq('posicion_cargo', cargoId).single();
                             if (data && (data.firma_entrega_url || data.firma_recepcion_url)) {
                                 document.getElementById('signatures-block').style.display = 'flex';
-                                if(data.firma_entrega_url) document.getElementById('img-entrega').src = data.firma_entrega_url;
-                                if(data.firma_recepcion_url) document.getElementById('img-recepcion').src = data.firma_recepcion_url;
+                                if(data.firma_entrega_url) document.getElementById('img-entrega').src = data.firma_entrega_url + '?t=' + new Date().getTime();
+                                if(data.firma_recepcion_url) document.getElementById('img-recepcion').src = data.firma_recepcion_url + '?t=' + new Date().getTime();
                                 signBtn.textContent = 'Editar Firmas';
                                 return true;
                             }
@@ -212,8 +213,9 @@
 
                         async function generateExportableImage(callback) {
                             const hasSignatures = await loadSignatures();
-                            document.getElementById('signatures-block').style.display = hasSignatures ? 'flex' : 'none';
-                            html2canvas(reportElement, { scale: 2, useCORS: true, windowWidth: reportElement.scrollWidth, windowHeight: reportElement.scrollHeight }).then(callback);
+                            setTimeout(() => { // Pequeña espera para que las imágenes de las firmas carguen
+                                html2canvas(reportElement, { scale: 2, useCORS: true, windowWidth: reportElement.scrollWidth, windowHeight: reportElement.scrollHeight }).then(callback);
+                            }, 500);
                         }
 
                         document.getElementById('download-pdf').addEventListener('click', () => {
@@ -227,14 +229,14 @@
                                     position = heightLeft - imgHeight; pdf.addPage();
                                     pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight); heightLeft -= pdfHeight;
                                 }
-                                pdf.save('Cargo-${currentPosition}.pdf');
+                                pdf.save('Cargo-' + cargoId + '.pdf');
                             });
                         });
                         
                         document.getElementById('download-jpg').addEventListener('click', () => {
                             generateExportableImage(canvas => {
                                 const link = document.createElement('a'); link.href = canvas.toDataURL('image/jpeg', 0.9);
-                                link.download = 'Cargo-${currentPosition}.jpg'; link.click();
+                                link.download = 'Cargo-' + cargoId + '.jpg'; link.click();
                             });
                         });
 
@@ -242,9 +244,9 @@
                             if (!navigator.share) { alert('Función de compartir no soportada.'); return; }
                             generateExportableImage(canvas => {
                                 canvas.toBlob(async (blob) => {
-                                    const file = new File([blob], 'Cargo-${currentPosition}.jpg', { type: 'image/jpeg' });
+                                    const file = new File([blob], 'Cargo-' + cargoId + '.jpg', { type: 'image/jpeg' });
                                     if (navigator.canShare({ files: [file] })) {
-                                        await navigator.share({ files: [file], title: 'Reporte de Cargo', text: 'Cargo N° ${currentPosition}' });
+                                        await navigator.share({ files: [file], title: 'Reporte de Cargo', text: 'Cargo N° ' + cargoId });
                                     } else { alert('No se puede compartir este archivo.'); }
                                 }, 'image/jpeg', 0.9);
                             });
@@ -367,13 +369,4 @@
             const contentDiv = document.getElementById(`content-${posicion}`);
             const checkboxes = contentDiv.querySelectorAll('.record-checkbox:checked');
             if (checkboxes.length === 0) { alert('Por favor, selecciona al menos un registro para eliminar.'); return; }
-            if (!confirm(`¿Estás seguro de que quieres eliminar ${checkboxes.length} registro(s)?`)) return;
-            const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
-            const { error } = await supabase.from('cargo').delete().in('id', idsToDelete);
-            if (error) { alert(`Error al eliminar: ${error.message}`); } 
-            else { alert('Registros eliminados con éxito.'); toggleCargoDetails(posicion); }
-        }
-        window.onload = initializeCargo;
-    </script>
-</body>
-</html>
+            if (!confirm(`¿Estás seguro de que quieres eliminar ${checkboxes.length} registro(
