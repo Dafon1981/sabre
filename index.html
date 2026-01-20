@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v4.2 (Botones Corregidos)</title>
+    <title>Sabre v3.2 (Compartir)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
-        /* --- Estilos de la App Principal (sin cambios ) --- */
+        /* --- Estilos (sin cambios ) --- */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: white; }
         #main-slider { width: 100%; height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
         .page-container { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; text-align: center; }
@@ -43,7 +43,7 @@
 </head>
 <body>
 
-    <!-- HTML Principal (sin cambios) -->
+    <!-- HTML (sin cambios) -->
     <div id="main-slider">
         <div id="neuronal-page" class="page-container">
             <h1>Modo Neuronal</h1>
@@ -54,9 +54,15 @@
         <div id="cargo-page" class="page-container">
             <div id="cargo-status">Cargo Actual: -</div>
             <form id="cargo-form">
-                <div class="input-group"><input type="number" id="nfua" placeholder="N° FUA" required></div>
-                <div class="input-group"><input type="text" id="nombre" placeholder="Nombre Completo" required></div>
-                <div class="input-group" id="nro_historia_group"><input type="text" id="nro_historia" placeholder="N° Historia" required inputmode="numeric"></div>
+                <div class="input-group">
+                    <input type="number" id="nfua" placeholder="N° FUA" required>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="nombre" placeholder="Nombre Completo" required>
+                </div>
+                <div class="input-group" id="nro_historia_group">
+                    <input type="text" id="nro_historia" placeholder="N° Historia" required inputmode="numeric">
+                </div>
                 <div class="action-buttons">
                     <button type="submit" class="btn btn-primary">Añadir Registro al Cargo</button>
                     <button type="button" id="generate-list-btn" class="btn btn-info">Generar Lista para Exportar</button>
@@ -75,16 +81,18 @@
     </div>
 
     <script>
+        // --- JavaScript (con la función de generar lista actualizada) ---
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
-        // ==================================================================
-        // LÓGICA DE GENERAR LISTA (CORREGIDA)
-        // ==================================================================
         const generateListBtn = document.getElementById('generate-list-btn');
+        let currentPosition = null;
+
+        // ==================================================================
+        // ¡FUNCIÓN DE GENERAR LISTA CON BOTÓN DE COMPARTIR!
+        // ==================================================================
         generateListBtn.addEventListener('click', async () => {
-            if (!currentPosition) { alert('No hay un cargo activo.'); return; }
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
             if (error || !data || data.length === 0) {
                 alert('No hay registros en el cargo actual para generar una lista.');
@@ -94,175 +102,111 @@
             let tableRows = data.map(row => `<tr><td>${row.nfua||''}</td><td>${row.nombre||''}</td><td>${row.nro_historia||''}</td></tr>`).join('');
 
             let reportHTML = `
-                <!DOCTYPE html><html lang="es"><head>
-                    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Cargo N° ${currentPosition}</title>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
-                    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"><\/script>
                     <style>
-                        body { font-family: sans-serif; margin: 0; padding: 10px; background-color: #f0f0f0; }
-                        #report-wrapper { max-width: 800px; margin: auto; }
-                        #report-container { background-color: white; padding: 20px; border: 1px solid #ccc; }
-                        table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: 8px; }
-                        .signatures-block { display: none; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccc; }
-                        .signature-box { text-align: center; } .signature-box img { width: 200px; height: 100px; border-bottom: 1px solid #555; }
-                        .action-bar { text-align: center; margin-top: 20px; } .action-bar button { padding: 12px 18px; margin: 5px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background-color: #007bff; color: white; }
-                        #sign-btn { background-color: #ffc107; color: black; } #share-btn { background-color: #25D366; }
-                        #signature-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9 ); z-index: 1000; }
-                        #signature-slider { display: flex; width: 200%; height: 100%; transition: transform 0.3s ease-in-out; }
-                        .signature-page { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
-                        .signature-pad-container { width: 95%; max-width: 500px; height: 60%; background: #000050; border-radius: 10px; position: relative; }
-                        .signature-pad-container canvas { width: 100%; height: 100%; border-radius: 10px; }
-                        .signature-page h3 { color: white; }
-                        .signature-page-nav { display: flex; justify-content: space-between; width: 95%; max-width: 500px; margin-top: 20px; }
-                        .nav-btn { padding: 15px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-                        .nav-btn-left { background-color: #dc3545; color: white; } .nav-btn-right { background-color: #007bff; color: white; } .nav-btn-final { background-color: #00c6ff; color: black; }
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f0f0f0; }
+                        #report-container { background-color: white; padding: 15px; border: 1px solid #ccc; width: 100%; max-width: 800px; margin: auto; box-sizing: border-box; }
+                        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; word-break: break-word; }
+                        th { background-color: #f2f2f2; }
+                        h2 { text-align: center; font-size: 18px; }
+                        .action-bar { text-align: center; margin-top: 20px; padding: 10px; }
+                        .action-bar button { padding: 12px 18px; margin: 5px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background-color: #007bff; color: white; }
+                        #share-btn { background-color: #25D366; } /* Color tipo WhatsApp */
+                        @media print { .action-bar { display: none; } }
                     </style>
-                </head><body>
-                    <div id="report-wrapper">
-                        <div id="report-container">
-                            <h2>Cargo N°: ${currentPosition}</h2>
-                            <table><thead><tr><th>N° FUA</th><th>Nombre Completo</th><th>N° Historia</th></tr></thead><tbody>${tableRows}</tbody></table>
-                            <div class="signatures-block" id="signatures-block">
-                                <div class="signature-box"><img id="img-entrega" crossorigin="anonymous"><p>Firma Entrega</p></div>
-                                <div class="signature-box"><img id="img-recepcion" crossorigin="anonymous"><p>Firma Recepción</p></div>
-                            </div>
-                        </div>
-                        <div class="action-bar">
-                            <button id="sign-btn">Firmar Documento</button>
-                            <button id="download-pdf">Descargar PDF</button>
-                            <button id="download-jpg">Descargar JPG</button>
-                            <button id="share-btn">Compartir</button>
-                        </div>
+                </head>
+                <body>
+                    <div id="report-container">
+                        <h2>Cargo N°: ${currentPosition} - Fecha: ${new Date( ).toLocaleDateString()}</h2>
+                        <table>
+                            <thead><tr><th>N° FUA</th><th>Nombre Completo</th><th>N° Historia</th></tr></thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
                     </div>
-                    <div id="signature-modal">
-                        <div id="signature-slider">
-                            <div class="signature-page">
-                                <h3>Firma de quien Entrega</h3>
-                                <div class="signature-pad-container"><canvas id="pad-entrega"></canvas></div>
-                                <div class="signature-page-nav"><button class="nav-btn nav-btn-left" id="close-modal-btn">Volver</button><button class="nav-btn nav-btn-right" id="next-page-btn">Siguiente</button></div>
-                            </div>
-                            <div class="signature-page">
-                                <h3>Firma de quien Recibe</h3>
-                                <div class="signature-pad-container"><canvas id="pad-recepcion"></canvas></div>
-                                <div class="signature-page-nav"><button class="nav-btn nav-btn-final" id="finish-sign-btn">Finalizar</button><button class="nav-btn nav-btn-left" id="prev-page-btn">Regresar</button></div>
-                            </div>
-                        </div>
+                    <div class="action-bar">
+                        <button id="download-pdf">Descargar PDF</button>
+                        <button id="download-jpg">Descargar JPG</button>
+                        <button id="share-btn">Compartir</button> <!-- ¡NUEVO BOTÓN! -->
                     </div>
                     <script>
-                        const supabase_report = window.supabase.createClient('${supabaseUrl}', '${supabaseKey}');
                         const { jsPDF } = window.jspdf;
                         const reportElement = document.getElementById('report-container');
-                        const signBtn = document.getElementById('sign-btn');
-                        const signatureModal = document.getElementById('signature-modal');
-                        const signatureSlider = document.getElementById('signature-slider');
-                        const padEntrega = new SignaturePad(document.getElementById('pad-entrega'));
-                        const padRecepcion = new SignaturePad(document.getElementById('pad-recepcion'));
-                        const cargoId = '${currentPosition}'; // ¡CORRECCIÓN CLAVE!
+                        const fileName = 'Cargo-${currentPosition}';
 
-                        signBtn.addEventListener('click', () => signatureModal.style.display = 'flex');
-                        document.getElementById('close-modal-btn').addEventListener('click', () => signatureModal.style.display = 'none');
-                        document.getElementById('next-page-btn').addEventListener('click', () => signatureSlider.style.transform = 'translateX(-50%)');
-                        document.getElementById('prev-page-btn').addEventListener('click', () => signatureSlider.style.transform = 'translateX(0%)');
+                        document.getElementById('download-pdf').addEventListener('click', () => { /* ... sin cambios ... */ });
+                        document.getElementById('download-jpg').addEventListener('click', () => { /* ... sin cambios ... */ });
 
-                        function dataURLToBlob(dataURL) {
-                            const parts = dataURL.split(';base64,'); const contentType = parts[0].split(':')[1]; const raw = window.atob(parts[1]); const rawLength = raw.length; const uInt8Array = new Uint8Array(rawLength);
-                            for (let i = 0; i < rawLength; ++i) { uInt8Array[i] = raw.charCodeAt(i); } return new Blob([uInt8Array], { type: contentType });
-                        }
-
-                        document.getElementById('finish-sign-btn').addEventListener('click', async () => {
-                            const firmaEntregaData = !padEntrega.isEmpty() ? padEntrega.toDataURL('image/png') : null;
-                            const firmaRecepcionData = !padRecepcion.isEmpty() ? padRecepcion.toDataURL('image/png') : null;
-                            
-                            async function uploadSignature(data, bucketName, type) {
-                                if (!data) return null;
-                                const blob = dataURLToBlob(data);
-                                const filePath = \`public/\${type}_\${cargoId}_\${Date.now()}.png\`;
-                                const { error } = await supabase_report.storage.from(bucketName).upload(filePath, blob);
-                                if (error) throw new Error(\`Error subiendo firma de \${type}: \${error.message}\`);
-                                return supabase_report.storage.from(bucketName).getPublicUrl(filePath).data.publicUrl;
+                        // ¡NUEVA LÓGICA PARA COMPARTIR!
+                        document.getElementById('share-btn').addEventListener('click', async () => {
+                            if (!navigator.share) {
+                                alert('Tu navegador no soporta la función de compartir.');
+                                return;
                             }
 
                             try {
-                                const entregaUrl = await uploadSignature(firmaEntregaData, 'firmas_entrega', 'entrega');
-                                const recepcionUrl = await uploadSignature(firmaRecepcionData, 'firmas_recepcion', 'recepcion');
-
-                                const { error: upsertError } = await supabase_report.from('cargos_firmados').upsert({
-                                    posicion_cargo: cargoId, firma_entrega_url: entregaUrl, firma_recepcion_url: recepcionUrl, updated_at: new Date()
-                                }, { onConflict: 'posicion_cargo' });
-                                if (upsertError) throw new Error(\`Error guardando firmas: \${upsertError.message}\`);
-                                
-                                alert('Firmas guardadas con éxito.');
-                                signatureModal.style.display = 'none';
-                                await loadSignatures();
-                            } catch (e) { alert(e.message); console.error(e); }
-                        });
-
-                        async function loadSignatures() {
-                            const { data, error } = await supabase_report.from('cargos_firmados').select('*').eq('posicion_cargo', cargoId).single();
-                            if (data && (data.firma_entrega_url || data.firma_recepcion_url)) {
-                                document.getElementById('signatures-block').style.display = 'flex';
-                                if(data.firma_entrega_url) document.getElementById('img-entrega').src = data.firma_entrega_url + '?t=' + new Date().getTime();
-                                if(data.firma_recepcion_url) document.getElementById('img-recepcion').src = data.firma_recepcion_url + '?t=' + new Date().getTime();
-                                signBtn.textContent = 'Editar Firmas';
-                                return true;
-                            }
-                            return false;
-                        }
-
-                        async function generateExportableImage(callback) {
-                            const hasSignatures = await loadSignatures();
-                            setTimeout(() => { // Pequeña espera para que las imágenes de las firmas carguen
-                                html2canvas(reportElement, { scale: 2, useCORS: true, windowWidth: reportElement.scrollWidth, windowHeight: reportElement.scrollHeight }).then(callback);
-                            }, 500);
-                        }
-
-                        document.getElementById('download-pdf').addEventListener('click', () => {
-                            generateExportableImage(canvas => {
-                                const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF('p', 'mm', 'a4');
-                                const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = pdf.internal.pageSize.getHeight();
-                                const imgProps = pdf.getImageProperties(imgData); const imgRatio = imgProps.width / imgProps.height;
-                                let imgHeight = pdfWidth / imgRatio; let heightLeft = imgHeight; let position = 0;
-                                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight); heightLeft -= pdfHeight;
-                                while (heightLeft > 0) {
-                                    position = heightLeft - imgHeight; pdf.addPage();
-                                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight); heightLeft -= pdfHeight;
-                                }
-                                pdf.save('Cargo-' + cargoId + '.pdf');
-                            });
-                        });
-                        
-                        document.getElementById('download-jpg').addEventListener('click', () => {
-                            generateExportableImage(canvas => {
-                                const link = document.createElement('a'); link.href = canvas.toDataURL('image/jpeg', 0.9);
-                                link.download = 'Cargo-' + cargoId + '.jpg'; link.click();
-                            });
-                        });
-
-                        document.getElementById('share-btn').addEventListener('click', () => {
-                            if (!navigator.share) { alert('Función de compartir no soportada.'); return; }
-                            generateExportableImage(canvas => {
+                                const canvas = await html2canvas(reportElement, { scale: 2 });
                                 canvas.toBlob(async (blob) => {
-                                    const file = new File([blob], 'Cargo-' + cargoId + '.jpg', { type: 'image/jpeg' });
-                                    if (navigator.canShare({ files: [file] })) {
-                                        await navigator.share({ files: [file], title: 'Reporte de Cargo', text: 'Cargo N° ' + cargoId });
-                                    } else { alert('No se puede compartir este archivo.'); }
-                                }, 'image/jpeg', 0.9);
+                                    const file = new File([blob], fileName + '.jpg', { type: 'image/jpeg' });
+                                    const shareData = {
+                                        files: [file],
+                                        title: 'Reporte de Cargo',
+                                        text: 'Reporte del Cargo N° ${currentPosition}',
+                                    };
+                                    if (navigator.canShare(shareData)) {
+                                        await navigator.share(shareData);
+                                    } else {
+                                        alert("No se puede compartir este tipo de archivo.");
+                                    }
+                                }, 'image/jpeg');
+                            } catch (err) {
+                                console.error("Error al compartir: ", err);
+                                alert("Ocurrió un error al intentar compartir la imagen.");
+                            }
+                        });
+
+                        // Lógica de descarga sin cambios
+                        document.getElementById('download-pdf').addEventListener('click', () => {
+                            html2canvas(reportElement, { scale: 2 }).then(canvas => {
+                                const imgData = canvas.toDataURL('image/png');
+                                const pdf = new jsPDF('p', 'mm', 'a4');
+                                const pdfWidth = pdf.internal.pageSize.getWidth();
+                                const canvasWidth = canvas.width;
+                                const canvasHeight = canvas.height;
+                                const ratio = canvasWidth / canvasHeight;
+                                const width = pdfWidth - 20;
+                                const height = width / ratio;
+                                pdf.addImage(imgData, 'PNG', 10, 10, width, height);
+                                pdf.save(fileName + '.pdf');
                             });
                         });
-                        loadSignatures();
+                        document.getElementById('download-jpg').addEventListener('click', () => {
+                            html2canvas(reportElement, { scale: 2 }).then(canvas => {
+                                const link = document.createElement('a');
+                                link.href = canvas.toDataURL('image/jpeg');
+                                link.download = fileName + '.jpg';
+                                link.click();
+                            });
+                        });
                     <\/script>
-                </body></html>`;
+                </body>
+                </html>
+            `;
             
             const reportWindow = window.open('', '_blank');
             reportWindow.document.write(reportHTML);
             reportWindow.document.close();
         });
+        // ==================================================================
 
-        // ==================================================================
-        // CÓDIGO ORIGINAL DE LA APP (RESTAURADO Y FUNCIONAL)
-        // ==================================================================
+        // ... (Resto del código de Cargo y Neuronal sin cambios) ...
         const neuronalMicBtn = document.getElementById('neuronal-mic-btn');
         const neuronalLog = document.getElementById('neuronal-log');
         const NeuronalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -369,4 +313,14 @@
             const contentDiv = document.getElementById(`content-${posicion}`);
             const checkboxes = contentDiv.querySelectorAll('.record-checkbox:checked');
             if (checkboxes.length === 0) { alert('Por favor, selecciona al menos un registro para eliminar.'); return; }
-            if (!confirm(`¿Estás seguro de que quieres eliminar ${checkboxes.length} registro(
+            if (!confirm(`¿Estás seguro de que quieres eliminar ${checkboxes.length} registro(s)?`)) return;
+            const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+            const { error } = await supabase.from('cargo').delete().in('id', idsToDelete);
+            if (error) { alert(`Error al eliminar: ${error.message}`); } 
+            else { alert('Registros eliminados con éxito.'); toggleCargoDetails(posicion); }
+        }
+        window.onload = initializeCargo;
+    </script>
+</body>
+</html>
+
