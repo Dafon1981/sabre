@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v4.0 (Reporte Numerado)</title>
+    <title>Sabre v4.1 (con Observaciones)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Restaurados y Refinados --- */
@@ -20,7 +20,7 @@
         #cargo-form { width: 100%; max-width: 400px; }
         .input-group { margin-bottom: 12px; position: relative; }
         .input-group label { display: block; text-align: left; font-size: 12px; color: #aaa; margin-bottom: 4px; }
-        .input-group input, .input-group select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #333; color: white; font-size: 14px; box-sizing: border-box; }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #333; color: white; font-size: 14px; box-sizing: border-box; font-family: inherit; }
         input:disabled { background: #2a2a2a; color: #888; }
         #nro_historia_group::before { content: 'E'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
         #nro_historia { padding-left: 28px !important; }
@@ -82,7 +82,7 @@
         </div>
     </div>
 
-    <script>
+     <script>
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
@@ -90,6 +90,7 @@
         let currentPosition = null;
         let currentCargoTitle = null;
 
+        // --- ÚNICO CAMBIO EN ESTA SECCIÓN ---
         const availableFields = {
             nfua: { label: 'N° FUA', type: 'number', placeholder: 'N° FUA' },
             nombre: { label: 'Nombre', type: 'text', placeholder: 'Nombre del Paciente' },
@@ -101,8 +102,10 @@
                 options: ['062', '071', '061']
             },
             cantidad: { label: 'Cant.', type: 'number', placeholder: 'Ej: 1' },
-            nro_item: { label: 'Item', type: 'number', placeholder: 'Ej: 1' }
+            nro_item: { label: 'Item', type: 'number', placeholder: 'Ej: 1' },
+            observacion: { label: 'Observación', type: 'textarea', placeholder: 'Añadir notas...' } // ¡NUEVO CAMPO!
         };
+        // --- FIN DEL CAMBIO ---
 
         const fieldSelector = document.getElementById('field-selector');
         const cargoForm = document.getElementById('cargo-form');
@@ -145,15 +148,17 @@
                 
                 let inputHTML = `<label for="${key}">${field.label}</label>`;
                 
+                // --- LÓGICA AJUSTADA PARA CREAR INPUT, SELECT O TEXTAREA ---
                 if (field.type === 'select') {
                     inputHTML += `<select id="${key}">`;
-                    field.options.forEach(opt => {
-                        inputHTML += `<option value="${opt}">${opt}</option>`;
-                    });
+                    field.options.forEach(opt => { inputHTML += `<option value="${opt}">${opt}</option>`; });
                     inputHTML += `</select>`;
+                } else if (field.type === 'textarea') {
+                    inputHTML += `<textarea id="${key}" rows="3" placeholder="${field.placeholder || ''}"></textarea>`;
                 } else {
                     inputHTML += `<input type="${field.type}" id="${key}" placeholder="${field.placeholder || ''}" ${field.inputmode ? `inputmode="${field.inputmode}"` : ''}>`;
                 }
+                // --- FIN DEL AJUSTE ---
                 
                 div.innerHTML = inputHTML;
                 cargoForm.appendChild(div);
@@ -182,7 +187,7 @@
             newRecord.titulo = currentCargoTitle || titleValue || null;
 
             activeFields.forEach(group => {
-                const input = group.querySelector('input, select');
+                const input = group.querySelector('input, select, textarea'); // Ahora busca también <textarea>
                 const key = input.id;
                 if (key === 'titulo') return;
 
@@ -209,7 +214,7 @@
                     currentCargoTitle = newRecord.titulo;
                 }
                 activeFields.forEach(group => {
-                    const input = group.querySelector('input, select');
+                    const input = group.querySelector('input, select, textarea');
                     if (input.id === 'titulo') {
                         input.disabled = true;
                     } else {
@@ -258,14 +263,11 @@
             const totalPages = Math.ceil(data.length / itemsPerPage);
             let allPagesHTML = '';
 
-            // --- ÚNICO CAMBIO EN ESTA FUNCIÓN ---
-            // 1. Añadir el encabezado de la columna de numeración
             const headers = `<th>#</th>` + selectedColumns.map(key => `<th>${availableFields[key].label}</th>`).join('');
 
             for (let i = 0; i < totalPages; i++) {
                 const pageData = data.slice(i * itemsPerPage, (i + 1) * itemsPerPage);
                 
-                // 2. Añadir la celda de numeración a cada fila
                 let tableRows = pageData.map((row, index) => {
                     const rowNumber = i * itemsPerPage + index + 1;
                     const cells = selectedColumns.map(key => `<td>${row[key] || ''}</td>`).join('');
@@ -274,7 +276,6 @@
 
                 allPagesHTML += `<div class="report-page"><h2>${reportTitle}</h2><p style="text-align:center; font-size:12px; margin-top:-10px; margin-bottom:15px;">Fecha: ${new Date().toLocaleDateString()} (Página ${i + 1} de ${totalPages})</p><table><thead><tr>${headers}</tr></thead><tbody>${tableRows}</tbody></table></div>`;
             }
-            // --- FIN DEL CAMBIO ---
 
             let reportHTML = `
                 <!DOCTYPE html><html lang="es"><head>
@@ -467,4 +468,3 @@
     </script>
 </body>
 </html>
-
