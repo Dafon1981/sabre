@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v3.8 (Exportación Final)</title>
+    <title>Sabre v3.9 (Exportación y ListBox)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Restaurados y Refinados --- */
@@ -81,7 +81,6 @@
             <button onclick="document.getElementById('manage-cargos-modal').style.display='none'" class="btn" style="margin-top: 20px; background: #555;">Cerrar</button>
         </div>
     </div>
-
     <script>
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
@@ -90,15 +89,21 @@
         let currentPosition = null;
         let currentCargoTitle = null;
 
+        // --- ÚNICO CAMBIO EN ESTA SECCIÓN ---
         const availableFields = {
             nfua: { label: 'N° FUA', type: 'number', placeholder: 'N° FUA' },
             nombre: { label: 'Nombre', type: 'text', placeholder: 'Nombre del Paciente' },
             nro_historia: { label: 'N° Historia', type: 'text', placeholder: 'N° Historia', inputmode: 'numeric' },
             fecha_atencion: { label: 'F. Atención', type: 'date', placeholder: '' },
-            cod_prestacional: { label: 'Cod. Prest.', type: 'text', placeholder: 'Ej: 062' },
+            cod_prestacional: { 
+                label: 'Cod. Prest.', 
+                type: 'select', // Cambiado de 'text' a 'select'
+                options: ['062', '071', '061'] // Opciones para el ListBox
+            },
             cantidad: { label: 'Cant.', type: 'number', placeholder: 'Ej: 1' },
             nro_item: { label: 'Item', type: 'number', placeholder: 'Ej: 1' }
         };
+        // --- FIN DEL CAMBIO ---
 
         const fieldSelector = document.getElementById('field-selector');
         const cargoForm = document.getElementById('cargo-form');
@@ -140,7 +145,18 @@
                 div.id = `input-group-${key}`;
                 
                 let inputHTML = `<label for="${key}">${field.label}</label>`;
-                inputHTML += `<input type="${field.type}" id="${key}" placeholder="${field.placeholder}" ${field.inputmode ? `inputmode="${field.inputmode}"` : ''}>`;
+                
+                // --- LÓGICA AJUSTADA PARA CREAR INPUT O SELECT ---
+                if (field.type === 'select') {
+                    inputHTML += `<select id="${key}">`;
+                    field.options.forEach(opt => {
+                        inputHTML += `<option value="${opt}">${opt}</option>`;
+                    });
+                    inputHTML += `</select>`;
+                } else {
+                    inputHTML += `<input type="${field.type}" id="${key}" placeholder="${field.placeholder || ''}" ${field.inputmode ? `inputmode="${field.inputmode}"` : ''}>`;
+                }
+                // --- FIN DEL AJUSTE ---
                 
                 div.innerHTML = inputHTML;
                 cargoForm.appendChild(div);
@@ -169,7 +185,7 @@
             newRecord.titulo = currentCargoTitle || titleValue || null;
 
             activeFields.forEach(group => {
-                const input = group.querySelector('input');
+                const input = group.querySelector('input, select'); // Ahora busca también <select>
                 const key = input.id;
                 if (key === 'titulo') return;
 
@@ -196,11 +212,11 @@
                     currentCargoTitle = newRecord.titulo;
                 }
                 activeFields.forEach(group => {
-                    const input = group.querySelector('input');
+                    const input = group.querySelector('input, select');
                     if (input.id === 'titulo') {
                         input.disabled = true;
                     } else {
-                        input.value = '';
+                        input.value = (input.tagName === 'SELECT') ? input.options[0].value : ''; // Resetea el select al primer valor
                     }
                 });
             }
@@ -284,7 +300,7 @@
                     <script>
                         const { jsPDF } = window.jspdf;
                         const reportContent = document.getElementById('report-content');
-                        const fileName = '${reportTitle.replace(/\\s+/g, '_')}';
+                        const fileName = '${reportTitle.replace(/\s+/g, '_')}';
 
                         async function generatePdfBlob() {
                             const pages = reportContent.querySelectorAll('.report-page');
@@ -448,4 +464,5 @@
     </script>
 </body>
 </html>
+
 
