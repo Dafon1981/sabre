@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v4.3 (Formato FUA Corregido)</title>
+    <title>Sabre v4.4 (Límite FUA Corregido)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         /* --- Estilos Restaurados y Refinados (Sin Cambios ) --- */
@@ -82,7 +82,7 @@
         </div>
     </div>
 
-        <script>
+    <script>
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
@@ -91,7 +91,6 @@
         let currentCargoTitle = null;
         let lastRecordId = null;
 
-        // --- CAMBIO: Añadido maxlength a nfua ---
         const availableFields = {
             nfua: { label: 'N° FUA', type: 'number', placeholder: 'N° FUA', maxlength: 7 },
             nombre: { label: 'Nombre', type: 'text', placeholder: 'Nombre del Paciente' },
@@ -106,7 +105,6 @@
             nro_item: { label: 'Item', type: 'number', placeholder: 'Ej: 1' },
             observacion: { label: 'Observación', type: 'textarea', placeholder: 'Añadir notas...' }
         };
-        // --- FIN DEL CAMBIO ---
 
         const fieldSelector = document.getElementById('field-selector');
         const cargoForm = document.getElementById('cargo-form');
@@ -156,7 +154,6 @@
                 } else if (field.type === 'textarea') {
                     inputHTML += `<textarea id="${key}" rows="3" placeholder="${field.placeholder || ''}"></textarea>`;
                 } else {
-                    // --- CAMBIO: Añadir maxlength si está definido ---
                     const maxlengthAttr = field.maxlength ? `maxlength="${field.maxlength}"` : '';
                     inputHTML += `<input type="${field.type}" id="${key}" placeholder="${field.placeholder || ''}" ${field.inputmode ? `inputmode="${field.inputmode}"` : ''} ${maxlengthAttr}>`;
                 }
@@ -164,6 +161,17 @@
                 div.innerHTML = inputHTML;
                 cargoForm.appendChild(div);
                 tag.classList.add('active');
+
+                // --- CAMBIO: Forzar el límite de 7 caracteres para N° FUA ---
+                if (key === 'nfua') {
+                    const nfuaInput = document.getElementById('nfua');
+                    nfuaInput.addEventListener('input', () => {
+                        if (nfuaInput.value.length > 7) {
+                            nfuaInput.value = nfuaInput.value.slice(0, 7);
+                        }
+                    });
+                }
+                // --- FIN DEL CAMBIO ---
 
                 if (isTitleField && currentCargoTitle) {
                     const titleInput = document.getElementById('titulo');
@@ -195,11 +203,12 @@
                 let value = input.value.trim();
                 if (value) {
                     hasValue = true;
-                    // --- CAMBIO: Lógica de formato para N° FUA ---
                     if (key === 'nfua') {
                         newRecord[key] = value.toString().padStart(7, '0');
+                    } else if (input.type === 'number') {
+                        newRecord[key] = parseInt(value, 10);
                     } else {
-                        newRecord[key] = (input.type === 'number') ? parseInt(value, 10) : value;
+                        newRecord[key] = value;
                     }
                 } else {
                     newRecord[key] = null;
@@ -216,7 +225,7 @@
                 alert(`Error al guardar: ${error.message}`);
             } else {
                 alert(`Registro añadido al cargo actual.`);
-                lastRecordId = data.id; // Guardar el ID del último registro
+                lastRecordId = data.id;
                 if (newRecord.titulo && !currentCargoTitle) {
                     currentCargoTitle = newRecord.titulo;
                 }
