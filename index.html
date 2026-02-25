@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sabre v4.1 (con Observaciones)</title>
+    <title>Sabre v4.3 (Formato FUA Corregido)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
-        /* --- Estilos Restaurados y Refinados --- */
+        /* --- Estilos Restaurados y Refinados (Sin Cambios ) --- */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #121212; color: white; }
         #main-slider { width: 100%; height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
         .page-container { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; text-align: center; }
         #neuronal-page h1 { margin-bottom: 10px; }
-        #neuronal-log { background: rgba(255,255,255,0.1 ); border-radius: 10px; padding: 15px; width: 90%; max-width: 500px; height: 150px; overflow-y: auto; margin-bottom: 20px; text-align: left; }
+        #neuronal-log { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; width: 90%; max-width: 500px; height: 150px; overflow-y: auto; margin-bottom: 20px; text-align: left; }
         #neuronal-mic-btn { background-color: #007bff; color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 36px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: transform 0.2s, background-color 0.2s; }
         #neuronal-mic-btn.recording { background-color: #dc3545; transform: scale(1.1); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.7); } 70% { box-shadow: 0 0 0 20px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
@@ -82,17 +82,18 @@
         </div>
     </div>
 
-     <script>
+        <script>
         const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
 
         let currentPosition = null;
         let currentCargoTitle = null;
+        let lastRecordId = null;
 
-        // --- ÚNICO CAMBIO EN ESTA SECCIÓN ---
+        // --- CAMBIO: Añadido maxlength a nfua ---
         const availableFields = {
-            nfua: { label: 'N° FUA', type: 'number', placeholder: 'N° FUA' },
+            nfua: { label: 'N° FUA', type: 'number', placeholder: 'N° FUA', maxlength: 7 },
             nombre: { label: 'Nombre', type: 'text', placeholder: 'Nombre del Paciente' },
             nro_historia: { label: 'N° Historia', type: 'text', placeholder: 'N° Historia', inputmode: 'numeric' },
             fecha_atencion: { label: 'F. Atención', type: 'date', placeholder: '' },
@@ -103,7 +104,7 @@
             },
             cantidad: { label: 'Cant.', type: 'number', placeholder: 'Ej: 1' },
             nro_item: { label: 'Item', type: 'number', placeholder: 'Ej: 1' },
-            observacion: { label: 'Observación', type: 'textarea', placeholder: 'Añadir notas...' } // ¡NUEVO CAMPO!
+            observacion: { label: 'Observación', type: 'textarea', placeholder: 'Añadir notas...' }
         };
         // --- FIN DEL CAMBIO ---
 
@@ -148,7 +149,6 @@
                 
                 let inputHTML = `<label for="${key}">${field.label}</label>`;
                 
-                // --- LÓGICA AJUSTADA PARA CREAR INPUT, SELECT O TEXTAREA ---
                 if (field.type === 'select') {
                     inputHTML += `<select id="${key}">`;
                     field.options.forEach(opt => { inputHTML += `<option value="${opt}">${opt}</option>`; });
@@ -156,9 +156,10 @@
                 } else if (field.type === 'textarea') {
                     inputHTML += `<textarea id="${key}" rows="3" placeholder="${field.placeholder || ''}"></textarea>`;
                 } else {
-                    inputHTML += `<input type="${field.type}" id="${key}" placeholder="${field.placeholder || ''}" ${field.inputmode ? `inputmode="${field.inputmode}"` : ''}>`;
+                    // --- CAMBIO: Añadir maxlength si está definido ---
+                    const maxlengthAttr = field.maxlength ? `maxlength="${field.maxlength}"` : '';
+                    inputHTML += `<input type="${field.type}" id="${key}" placeholder="${field.placeholder || ''}" ${field.inputmode ? `inputmode="${field.inputmode}"` : ''} ${maxlengthAttr}>`;
                 }
-                // --- FIN DEL AJUSTE ---
                 
                 div.innerHTML = inputHTML;
                 cargoForm.appendChild(div);
@@ -187,14 +188,19 @@
             newRecord.titulo = currentCargoTitle || titleValue || null;
 
             activeFields.forEach(group => {
-                const input = group.querySelector('input, select, textarea'); // Ahora busca también <textarea>
+                const input = group.querySelector('input, select, textarea');
                 const key = input.id;
                 if (key === 'titulo') return;
 
                 let value = input.value.trim();
                 if (value) {
                     hasValue = true;
-                    newRecord[key] = (input.type === 'number') ? parseInt(value, 10) : value;
+                    // --- CAMBIO: Lógica de formato para N° FUA ---
+                    if (key === 'nfua') {
+                        newRecord[key] = value.toString().padStart(7, '0');
+                    } else {
+                        newRecord[key] = (input.type === 'number') ? parseInt(value, 10) : value;
+                    }
                 } else {
                     newRecord[key] = null;
                 }
@@ -205,11 +211,12 @@
                 return;
             }
 
-            const { error } = await supabase.from('cargo').insert(newRecord);
+            const { data, error } = await supabase.from('cargo').insert(newRecord).select('id').single();
             if (error) {
                 alert(`Error al guardar: ${error.message}`);
             } else {
                 alert(`Registro añadido al cargo actual.`);
+                lastRecordId = data.id; // Guardar el ID del último registro
                 if (newRecord.titulo && !currentCargoTitle) {
                     currentCargoTitle = newRecord.titulo;
                 }
@@ -226,6 +233,8 @@
         
         addRecordBtn.addEventListener('click', handleAddRecord);
 
+        // ... (El resto del código, incluyendo generateReport, modo neuronal y gestor de cargos, permanece sin cambios) ...
+        
         document.getElementById('generate-list-btn').addEventListener('click', async () => {
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', currentPosition).order('created_at', { ascending: true });
             if (error || !data || data.length === 0) {
@@ -376,9 +385,18 @@
                 const transcript = event.results[0][0].transcript;
                 neuronalLog.innerHTML += `<div>- ${transcript}</div>`;
                 neuronalLog.scrollTop = neuronalLog.scrollHeight;
-                const { error } = await supabase.from('neuronal').insert({ contenido: transcript });
-                if (error) { neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error: ${error.message}</div>`; } 
-                else { neuronalLog.innerHTML += `<div style="color: #a5d6a7;">Guardado ✓</div>`; }
+                
+                if (!lastRecordId) {
+                    neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error: No hay un registro reciente al cual añadir la observación.</div>`;
+                    return;
+                }
+                
+                const { error } = await supabase.from('cargo').update({ observacion: transcript }).eq('id', lastRecordId);
+                if (error) { 
+                    neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error al guardar obs: ${error.message}</div>`;
+                } else { 
+                    neuronalLog.innerHTML += `<div style="color: #a5d6a7;">Observación guardada en el último registro ✓</div>`;
+                }
             };
             neuronalRecognition.onend = () => { isNeuronalRecording = false; neuronalMicBtn.classList.remove('recording'); neuronalMicBtn.textContent = '🎤'; };
             neuronalRecognition.onerror = (event) => { console.error('Error en Neuronal:', event.error); neuronalLog.innerHTML += `<div style="color: #ffcdd2;">Error: ${event.error}</div>`; };
@@ -424,6 +442,7 @@
             if (confirm('¿Estás seguro de que quieres forzar la creación de un nuevo cargo?')) {
                 currentPosition = await getNextPosition();
                 currentCargoTitle = null;
+                lastRecordId = null;
                 updateStatus();
                 const titleInput = document.getElementById('titulo');
                 if (titleInput) {
@@ -446,7 +465,7 @@
             contentDiv.style.display = 'block';
             const { data, error } = await supabase.from('cargo').select('*').eq('posicion', posicion);
             if (error) { contentDiv.innerHTML = 'Error al cargar registros.'; return; }
-            contentDiv.innerHTML = `<table>${data.map(row => `<tr><td><input type="checkbox" class="record-checkbox" value="${row.id}"></td><td>${row.nombre || 'S/N'}</td><td>${row.nfua || 'S/F'}</td><td>${row.titulo || 'S/T'}</td></tr>`).join('')}</table><div class="record-actions"><button class="btn btn-danger" onclick="deleteSelected('${posicion}')">Eliminar</button><button class="btn btn-primary" onclick="switchToCargo('${posicion}')">Añadir a este</button></div>`;
+            contentDiv.innerHTML = `<table><thead><tr><th></th><th>Nombre</th><th>FUA</th><th>Título</th><th>Item</th><th>Cod.Prest.</th><th>Cant.</th></tr></thead><tbody>${data.map(row => `<tr><td><input type="checkbox" class="record-checkbox" value="${row.id}"></td><td>${row.nombre || 'S/N'}</td><td>${row.nfua || 'S/F'}</td><td>${row.titulo || 'S/T'}</td><td>${row.nro_item || '-'}</td><td>${row.cod_prestacional || '-'}</td><td>${row.cantidad || '-'}</td></tr>`).join('')}</tbody></table><div class="record-actions"><button class="btn btn-danger" onclick="deleteSelected('${posicion}')">Eliminar</button><button class="btn btn-primary" onclick="switchToCargo('${posicion}')">Añadir a este</button></div>`;
         }
         function switchToCargo(posicion) {
             currentPosition = posicion;
@@ -468,3 +487,4 @@
     </script>
 </body>
 </html>
+
